@@ -3,6 +3,34 @@ html {
 }
 
 body {
-    color: #fff;
-    background-color: #000;
+    color: #ffd800;
+    background-image: url("./assets/BestLarge45.jpg");
+}
+
+header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #0026ff;
+    position: fixed;
+    top: 0px;
+    width: 100%;
+}
+
+h1 {
+    display: inline-block;
+    background-color: #ff0000;
+    color: #0000ff;
+    font-size: 2.5rem;
+}
+
+nav {
+    background-color: #ffd800;
+    padding-right: 5px;
+}
+
+#logo {
+    width: 11.4375rem;
+    height: 6.25rem;
 }
