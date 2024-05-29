@@ -31,6 +31,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="requirements.txt" />
+    <Content Include="static\css\assets\BestLarge45.jpg" />
+    <Content Include="static\css\assets\CTPLogo%28Org%29.jpg" />
     <Content Include="static\css\styles.css" />
     <Content Include="static\js\appointment_match_agora.js" />
     <Content Include="templates\agora-report.html" />
@@ -41,6 +43,7 @@
     <Folder Include="generators\" />
     <Folder Include="static\" />
     <Folder Include="static\css\" />
+    <Folder Include="static\css\assets\" />
     <Folder Include="static\js\" />
     <Folder Include="templates\" />
   </ItemGroup>
