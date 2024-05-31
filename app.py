@@ -1,33 +1,34 @@
-"""
-This script runs the application using a development server.
-It contains the definition of routes and views for the application.
-"""
-
 from flask import Flask, render_template, request, jsonify, send_file
 from generators.appointment_match_agora import generate_appointment_agora_report
+from flask_cors import CORS
+import logging
 import os
 
 app = Flask(__name__)
+
+CORS(app)
+
+logging.basicConfig(filename='app.log', level=logging.DEBUG)
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 wsgi_app = app.wsgi_app
 
 
 @app.route('/')
-def hello():
+def home():
     """Renders a sample page."""
     return render_template('home.html')
 
-@app.route('/reports')
+@app.route('/report-generator')
 def reports():
     """Renders the reports home page template to the /reports url."""
     return render_template('reports.html')
 
-@app.route('/reports/agora-match')
+@app.route('/report-generator/agora-match')
 def agora_match_report():
     return render_template('agora-report.html')
 
-@app.route('/reports/agora-match/generate-report', methods=['POST'])
+@app.route('/report-generator/agora-match/generate-report', methods=['POST'])
 def generate_report():
     """Generates the Agora Match report."""
     if request.headers['Content-Type'] == 'application/json':
@@ -51,12 +52,3 @@ def generate_report():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415
-
-if __name__ == '__main__':
-    import os
-    HOST = os.environ.get('SERVER_HOST', 'localhost')
-    try:
-        PORT = int(os.environ.get('SERVER_PORT', '5555'))
-    except ValueError:
-        PORT = 5555
-    app.run(HOST, PORT)

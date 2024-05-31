@@ -9,12 +9,14 @@
 </head>
 <body>
     <h1>Agora Match Report</h1>
-    <form action="/reports/agora-match/generate-report" method="post">
-        <label for="start-date">Start Date Range:</label>
-        <input type="date" id="start-date" name="start-date" required>
-        <label for="end-date">End Date Range:</label>
-        <input type="date" id="end-date" name="end-date" required>
-        <button onclick="generateReport()" type="button">Generate Report</button>  <!-- Change type to button -->
-    </form>
+    <div>
+        <form action="/reports/agora-match/generate-report" method="post">
+            <label for="start-date">Start Date Range:</label>
+            <input type="date" id="start-date" name="start-date" required>
+            <label for="end-date">End Date Range:</label>
+            <input type="date" id="end-date" name="end-date" required>
+            <button onclick="generateReport()" type="button">Generate Report</button>  <!-- Change type to button -->
+        </form>
+    </div>
 </body>
 </html>

@@ -16,6 +16,7 @@
     <SuppressCollectPythonCloudServiceFiles>true</SuppressCollectPythonCloudServiceFiles>
     <Name>CTPReportGenerator</Name>
     <RootNamespace>CTPReportGenerator</RootNamespace>
+    <SuppressEnvironmentCreationPrompt>True</SuppressEnvironmentCreationPrompt>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -28,6 +29,7 @@
   <ItemGroup>
     <Compile Include="app.py" />
     <Compile Include="generators\appointment_match_agora.py" />
+    <Compile Include="wfastcgi.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="requirements.txt" />
@@ -38,6 +40,7 @@
     <Content Include="templates\agora-report.html" />
     <Content Include="templates\home.html" />
     <Content Include="templates\reports.html" />
+    <Content Include="web.config" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="generators\" />

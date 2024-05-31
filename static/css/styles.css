@@ -3,7 +3,6 @@ html {
 }
 
 body {
-    color: #ffd800;
     background-image: url("./assets/BestLarge45.jpg");
 }
 
@@ -16,6 +15,7 @@ header {
     position: fixed;
     top: 0px;
     width: 100%;
+    z-index: 25;
 }
 
 h1 {
@@ -33,4 +33,16 @@ nav {
 #logo {
     width: 11.4375rem;
     height: 6.25rem;
+}
+
+div {
+    background-color: #bbb;
+}
+
+#spacer {
+    position: relative;
+    top: 6.24rem;
+    height: 1000px;
+    width: 90%;
+    margin: 0px auto;
 }

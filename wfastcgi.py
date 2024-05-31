@@ -1,0 +1,2 @@
+import wfastcgi
+wfastcgi.main()
