@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Contacts Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/active-contacts.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>Active Contacts Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <label>Status:</label>
+                <div class="active-row">
+                    <input class="checkboxes" type="checkbox" id="active" name="status" value="Active">
+                    <label for="active">Active</label>
+                    <input class="checkboxes" type="checkbox" id="inactive" name="status" value="Inactive">
+                    <label for="inactive">Inactive</label>
+                </div>
+                
+                <label>Employee Type:</label>
+                <div class="active-row">
+                    <input class="checkboxes" type="checkbox" id="employee" name="pg_type" value="employee">
+                    <label for="employee">Employee</label>
+                    <input class="checkboxes" type="checkbox" id="nonEmployee" name="pg_type" value="nonEmployee">
+                    <label for="nonEmployee">Non-Employee</label>
+                </div>
+
+                <label>Service Type:</label>
+                <div>
+                    <div class="active-row">
+                        <input class="checkboxes" type="checkbox" id="client" name="service_type" value="ServiceType: Client">
+                        <label for="client">Client</label>
+                        <input class="checkboxes" type="checkbox" id="provider" name="service_type" value="ServiceType: Provider">
+                        <label for="provider">Provider</label>
+                        <input class="checkboxes" type="checkbox" id="contact" name="service_type" value="ServiceType: Contact">
+                        <label for="contact">Contact</label>
+                    </div>
+                    <div class="active-row">
+                        <input class="checkboxes" type="checkbox" id="support" name="service_type" value="ServiceType: Support">
+                        <label for="support">Support</label>
+                        <input class="checkboxes" type="checkbox" id="nonProvider" name="service_type" value="Non-Provider">
+                        <label for="nonProvider">Non-Provider</label>
+                        <input class="checkboxes" type="checkbox" id="preEmployment" name="service_type" value="ServiceType: Pre-Employment">
+                        <label for="preEmployment">Pre-Employment</label>
+                    </div>
+                </div>
+
+                <button onclick="generateReport()" type="button">Generate Report</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

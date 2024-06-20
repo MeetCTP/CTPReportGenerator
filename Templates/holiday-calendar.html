@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Holiday Calendar</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    </head>
+    <body>
+        <header>
+            <a href="http://ctphome"><img src="../static/css/assets/websitetestlogo.png" alt="CTP Logo" id="logo"/></a>
+            <h1 class="alt-title">Holiday Calendar 2024</h1>
+        </header>
+        <div class="pdf-container" id="calendar-container">
+            <iframe class="pdf-viewer" src="../static/css/assets/CTP Holiday List 2024.pdf" class="pdf-viewer" ></iframe>
+        </div>
+    </body>
+</html>

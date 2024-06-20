@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provider Sessions Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/provider-sessions.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>Provider Sessions Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <label for="range-start">App Start Range:</label>
+                <input type="date" id="range-start" name="range-start" required>
+                <label for="range-end">App End Range (+1 day):</label>
+                <input type="date" id="range-end" name="range-end" required>
+                
+                <h3>Supervisor:</h3>
+                <div id="supervisors-list">
+                    <!-- Supervisor checkboxes will be added here by JavaScript -->
+                </div>
+                
+                <h3>Status:</h3>
+                <div id="status-list">
+                    <!-- Status checkboxes will be added here by JavaScript -->
+                </div>
+                
+                <button type="button" onclick="generateReport()">Generate Report</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -5,18 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agora Match Report</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
-    <script src="../static/js/appointment_match_agora.js"></script>
+    <script src="{{ url_for('static', filename='js/appointment_match_agora.js') }}"></script>
 </head>
 <body>
-    <h1>Agora Match Report</h1>
-    <div>
-        <form action="/reports/agora-match/generate-report" method="post">
-            <label for="start-date">Start Date Range:</label>
-            <input type="date" id="start-date" name="start-date" required>
-            <label for="end-date">End Date Range:</label>
-            <input type="date" id="end-date" name="end-date" required>
-            <button onclick="generateReport()" type="button">Generate Report</button>  <!-- Change type to button -->
-        </form>
+    <div class="container-blk">
+        <h1>Agora Match Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <label for="start-date">Start Date Range:</label>
+                <input type="date" id="start-date" name="start-date" required>
+                <label for="end-date">End Date Range:</label>
+                <input type="date" id="end-date" name="end-date" required>
+                <button onclick="generateReport()" type="button">Generate Report</button>  <!-- Change type to button -->
+            </form>
+        </div>
     </div>
 </body>
 </html>

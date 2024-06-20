@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Late Conversions Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/late-conversions.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>Late Conversions Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <label for="app-start">App Start Date:</label>
+                <input type="date" id="app-start" name="app-start" required>
+                <label for="app-end">App End Date (+1 day):</label>
+                <input type="date" id="app-end" name="app-end" required>
+                <label for="converted-after">Converted After:</label>
+                <input type="date" id="converted-after" name="converted-after" required>
+                <button onclick="generateReport()" type="button">Generate Report</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

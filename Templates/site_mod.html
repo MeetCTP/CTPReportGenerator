@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connecting The Pieces</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+</head>
+<body>
+    <header>
+        <a href="{{ url_for('home') }}" class="rmv-margin"><img src="{{ url_for('static', filename='css/assets/websitetestlogo.png') }}" alt="CTP Logo" id="logo"/></a>
+        <h1 class="alt-title">Site Editor</h1>
+    </header>
+    <section class="mod-container container-blk">
+        <h3>Add News</h3>
+        <div>
+            <form class="set-forms" id="news-form" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="form_type" value="news">
+                <label>Title: </label>
+                <input type="text" id="title" name="Title">
+                <label>Body: </label>
+                <textarea name="Body" id="news-body" cols="40" rows="5"></textarea>
+                <input type="file" id="myFile" name="filename">
+                <input type="submit">
+            </form>
+        </div>
+        <h3>Add Notification</h3>
+        <div>
+            <form class="set-forms" id="notification-form" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="form_type" value="notification">
+                <label>Event Date: </label>
+                <input type="date" id="date" name="Date" required>
+                <label>Notification: </label>
+                <textarea name="Body" id="notification-body" cols="40" rows="5"></textarea>
+                <input type="submit">
+            </form>
+        </div>
+        <h3>Add Weekly Q&A</h3>
+        <div>
+            <form class="set-forms" id="QA-form" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="form_type" value="qa">
+                <label>Question: </label>
+                <textarea name="Body" id="qa-body" cols="40" rows="5"></textarea>
+                <input type="submit">
+            </form>
+        </div>
+    </section>
+</body>
+</html>

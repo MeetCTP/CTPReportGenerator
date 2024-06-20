@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unconverted Time Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="{{ url_for('static', filename='js/forty-eight.js') }}" defer></script>
+</head>
+<body>
+    <main class="container-blk">
+        <section>
+            <h1>Unconverted/Late Conversion Report</h1>
+            <nav class="report-nav">
+                <a href="http://ctphome/report-generator">Back to Reports</a>
+                <a href="http://ctphome">Home</a>
+            </nav>
+        </section>
+        <section>
+            <h2>Select Company Roles and Date Range</h2>
+            <form id="report-form">
+                <div>
+                    <label for="start-date">Start Date:</label>
+                    <input type="date" id="start-date" name="start_date" required>
+                </div>
+                <div>
+                    <label for="end-date">End Date:</label>
+                    <input type="date" id="end-date" name="end_date" required>
+                </div>
+                <div>
+                    <label for="company_roles">Select Company Roles:</label>
+                    <div>
+                        <input class="checkboxes" type="checkbox" name="company_roles" value="CompanyRole: Employee"> Employee
+                        <input class="checkboxes" type="checkbox" name="company_roles" value="CompanyRole: Contractor"> Contractor
+                    </div>
+                </div>
+                <button type="submit">Generate Report</button>
+            </form>
+        </section>
+        <section id="report-section" style="display:none;">
+            <h2>Mailing List</h2>
+            <form id="mailing-list-form">
+                <div id="mailing-list-container"></div>
+                <button type="submit">Send Emails</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No Show/Late Cancel Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/no-show-late-cancel.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>No Show/Late Cancel Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <label for="app-start">App Start Date:</label>
+                <input type="date" id="app-start" name="app-start" required>
+                <label for="app-end">App End Date (+1 day):</label>
+                <input type="date" id="app-end" name="app-end" required>
+                <label for="provider">Provider Name:</label>
+                <input type="text" id="provider" name="provider">
+                <label for="client">Client Name:</label>
+                <input type="text" id="client" name="client">
+                <label for="school">School:</label>
+                <select id="school" name="school" multiple>
+                    <option value="">Select Schools</option>
+                    <option value="School: Agora Cyber">School: Agora Cyber</option>
+                    <option value="School: Commonwealth Charter Academy">School: Commonwealth Charter Academy</option>
+                    <option value="School: Achievement House Cyber Charter School">School: Achievement House Cyber Charter School</option>
+                    <option value="School: Elwyn">School: Elwyn</option>
+                    <option value="School: PA Distance Learning Charter">School: PA Distance Learning Charter</option>
+                    <option value="School: Insight">School: Insight</option>
+                    <option value="School: Reach Cyber">School: Reach Cyber</option>
+                    <option value="School: PA Virtual Charter">School: PA Virtual Charter</option>
+                    <option value="School: PA Leadership Charter School">School: PA Leadership Charter School</option>
+                    <option value="School: Delaware Co Intermediate Unit">School: Delaware Co Intermediate Unit</option>
+                    <option value="School: Central PA Digital Learning Foundation">School: Central PA Digital Learning Foundation</option>
+                    <option value="School: Methaction">School: Methaction</option>
+                    <option value="School: PA Cyber">School: PA Cyber</option>
+                    <option value="School: Private">School: Private</option>
+                    <option value="School: North Penn District">School: North Penn District</option>
+                    <option value="School: Daniel Boone District">School: Daniel Boone District</option>
+                    <option value="School: Hatboro-Horsham District">School: Hatboro-Horsham District</option>
+                    <option value="School: Radnor District">School: Radnor District</option>
+                    <option value="School: Lower Moreland Township District">School: Lower Moreland Township District</option>
+                </select>
+                <button onclick="generateReport()" type="button">Generate Report</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

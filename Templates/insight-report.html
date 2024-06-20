@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agora Match Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/appointment-match-insight.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>Agora Match Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <label for="start-date">Start Date Range:</label>
+                <input type="date" id="start-date" name="start-date" required>
+                <label for="end-date">End Date Range:</label>
+                <input type="date" id="end-date" name="end-date" required>
+                <button onclick="generateReport()" type="button">Generate Report</button>  <!-- Change type to button -->
+            </form>
+        </div>
+    </div>
+</body>
+</html>
