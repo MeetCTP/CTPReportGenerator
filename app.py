@@ -28,7 +28,7 @@ connection_string = f"mssql+pymssql://MeetCTP\Joshua.Bliven:$Unlock03@CTP-DB/CTP
 engine = create_engine(connection_string)
 
 #People
-lisa = f"Lisa.Kowalski"
+lisa = f"Lisa.A.Kowalski"
 dan = f"Dan.A.Costello"
 admin = f"Administrator"
 fabian = f"Fabian.Legarreta"
@@ -41,22 +41,20 @@ amy = f"Amy.P.Ronen"
 stacey = f"Stacey.A.Nardo"
 christie = f"Christina.K.Sampson"
 greg = f"Gregory.T.Hughes"
-bree = f"Brianna.T.Peterson"
-jesse = f"Jesse.Petracz"
+jesse = f"Jesse.Petrecz"
 saqoya = f"Saqoya.S.Weldon"
-capriest = f"Capriest.T.Parker"
 olivia = f"Olivia.a.DiPasquale"
 
 #Groups
-admin_group = [josh, fabian, lisa, admin]
+admin_group = [josh, fabian, lisa, admin, cari]
 recruiting_group = [amy, stacey]
 clinical_group = [saqoya, jesse]
-accounting_group = [eileen, greg, cari]
-student_services_group = [eileen, cari, christie, bree, capriest, olivia]
+accounting_group = [eileen, greg]
+student_services_group = [eileen, christie, olivia]
 human_resources_group = [aaron, linda]
 it_group = [josh, fabian, dan]
 testing_group = [josh, fabian]
-site_mod_group = [josh, fabian, lisa, admin, aaron, eileen]
+site_mod_group = [josh, fabian, lisa, admin, eileen]
 
 def handle_submit_form_data(table, data):
     if table == 'News_Posts':
@@ -408,7 +406,7 @@ def handle_generate_forty_eight_hour_report():
         end_date = data.get('end_date')
         
         try:
-            _, excel_file = generate_unconverted_time_report(selected_roles, start_date, end_date)
+            _, _, _, excel_file = generate_unconverted_time_report(selected_roles, start_date, end_date)
             return send_file(
                 excel_file,
                 as_attachment=True,
@@ -429,8 +427,12 @@ def get_mailing_list():
         end_date = data.get('end_date')
         
         try:
-            mailing_list, _ = generate_unconverted_time_report(selected_roles, start_date, end_date)
-            return jsonify(mailing_list)
+            mailing_list, warning_list, non_payment_list, _ = generate_unconverted_time_report(selected_roles, start_date, end_date)
+            return jsonify({
+                'mailing_list': mailing_list,
+                'warning_list': warning_list,
+                'non_payment_list': non_payment_list
+            })
         except Exception as e:
             print('Exception occurred: ', e)
             return jsonify({'error': str(e)}), 500

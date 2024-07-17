@@ -9,7 +9,7 @@ import os
 def generate_util_tracker(file_path):
     user_name = os.getlogin()
     documents_path = f"C:/Users/{user_name}/Documents/"
-    connection_string = f"mssql+pymssql://MeetCTP\Joshua.Bliven:$Unlock03@CTP-DB/CRDB"
+    connection_string = f"mssql+pymssql://MeetCTP\Joshua.Bliven:$Unlock03@CTP-DB/CRDB2"
     engine = create_engine(connection_string)
     
     dfs = pd.read_excel(file_path, sheet_name=None)
@@ -32,16 +32,8 @@ def generate_util_tracker(file_path):
     
     util_query = f"""
         SELECT
-            AuthHours,
-            AuthType,
-            provider,
-            Client,
-            ServiceDate,
-            Status,
-            AppHours,
-            UtilizedHours,
-            CancelledHours
-        FROM UtilizationV3_New
+            *
+        FROM ClinicalUtilizationTracker
         WHERE CONVERT(DATE, ServiceDate, 101) BETWEEN '{start_date_str}' AND '{end_date_str}'
     """
     util_data = pd.read_sql_query(util_query, engine)

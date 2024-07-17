@@ -23,11 +23,11 @@ def generate_no_show_late_cancel_report(app_start, app_end, provider, client, sc
                 AppEnd,
                 AppMinutes,
                 AppHours,
+                ClientId,
+                Client,
                 ProviderId,
                 Provider,
                 ProviderEmail,
-                ClientId,
-                Client,
                 School,
                 BillingCode,
                 BillingDesc,
@@ -71,17 +71,21 @@ def generate_no_show_late_cancel_report(app_start, app_end, provider, client, sc
         scheduling_data = pd.read_sql_query(scheduling_query, engine)
         
         provider_session_data['AppStart'] = pd.to_datetime(provider_session_data['AppStart'])
+        scheduling_data['SchedulingSegmentStartDateTime'] = pd.to_datetime(scheduling_data['SchedulingSegmentStartDateTime'])
 
         report_data = pd.merge(provider_session_data, scheduling_data,
                             left_on=['AppStart', 'Provider', 'Client'],
                             right_on=['SchedulingSegmentStartDateTime', 'SchedulingPrincipal1Name', 'SchedulingPrincipal2Name'],
                             how='inner')
+        
+        report_data.drop_duplicates(inplace=True)
 
         columns_to_drop = ['SchedulingPrincipal1Name', 'SchedulingPrincipal1Id', 
                         'SchedulingPrincipal2Id', 'SchedulingPrincipal2Name', 
                         'SchedulingCancelledReason', 'SchedulingSegmentStartDateTime', 'Status']
 
         report_data.drop(columns=columns_to_drop, inplace=True)
+        report_data['AppStart'] = report_data['AppStart'].dt.strftime('%m/%d/%Y %I:%M%p')
 
         output_file = io.BytesIO()
         report_data.to_excel(output_file, index=False)

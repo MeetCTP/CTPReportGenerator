@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const roleForm = document.getElementById('report-form');
     const reportSection = document.getElementById('report-section');
     const mailingListContainer = document.getElementById('mailing-list-container');
+    const warningListContainer = document.getElementById('warning-list-container');
+    const nonPaymentListContainer = document.getElementById('non-payment-list-container');
 
     roleForm.addEventListener('submit', async function (event) {
         event.preventDefault();
@@ -24,8 +26,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            // Request to generate the report
-            const response = await fetch('/report-generator/forty-eight-hour-warning/generate-report', {
+            // Request to generate the report and download it
+            const reportResponse = await fetch('/report-generator/forty-eight-hour-warning/generate-report', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -33,20 +35,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify({ company_roles: selectedRoles, start_date: startDate, end_date: endDate }),
             });
 
-            if (!response.ok) {
-                const errorResponse = await response.json();
+            if (!reportResponse.ok) {
+                const errorResponse = await reportResponse.json();
                 throw new Error(errorResponse.error || 'Network response was not ok');
             }
 
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `48_Hour_Late_Conversions_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
+            const reportBlob = await reportResponse.blob();
+            const reportUrl = window.URL.createObjectURL(reportBlob);
+            const reportLink = document.createElement('a');
+            reportLink.style.display = 'none';
+            reportLink.href = reportUrl;
+            reportLink.download = `48_Hour_Late_Conversions_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(reportLink);
+            reportLink.click();
+            window.URL.revokeObjectURL(reportUrl);
 
             // Request to get the mailing list
             const mailingListResponse = await fetch('/report-generator/forty-eight-hour-warning/get-mailing-list', {
@@ -62,8 +64,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 throw new Error(errorResponse.error || 'Network response was not ok');
             }
 
-            const mailingList = await mailingListResponse.json();
-            displayMailingList(mailingList);
+            const mailingListData = await mailingListResponse.json();
+            displayMailingList(mailingListData.mailing_list);
+            displayWarningList(mailingListData.warning_list);
+            displayNonPaymentList(mailingListData.non_payment_list);
             reportSection.style.display = 'block';
 
         } catch (error) {
@@ -78,11 +82,31 @@ document.addEventListener('DOMContentLoaded', function () {
         for (const [email, info] of Object.entries(mailingList)) {
             const div = document.createElement('div');
             div.innerHTML = `
-                <input type="checkbox" id="${email}" name="providers" value="${email}">
+                <input class="checkboxes" type="checkbox" id="${email}" name="providers" value="${email}">
                 <label for="${email}">${info.name} (${email})</label>
             `;
             mailingListContainer.appendChild(div);
         }
+    }
+
+    function displayWarningList(warningList) {
+        warningListContainer.innerHTML = '';
+
+        warningList.forEach(item => {
+            const div = document.createElement('div');
+            div.textContent = `${item.ProviderName} (${item.ProviderEmail}): ${new Date(item.AppStart).toLocaleString()}`;
+            warningListContainer.appendChild(div);
+        });
+    }
+
+    function displayNonPaymentList(nonPaymentList) {
+        nonPaymentListContainer.innerHTML = '';
+
+        nonPaymentList.forEach(item => {
+            const div = document.createElement('div');
+            div.textContent = `${item.ProviderName} (${item.ProviderEmail}): ${new Date(item.AppStart).toLocaleString()}`;
+            nonPaymentListContainer.appendChild(div);
+        });
     }
 
     const mailingListForm = document.getElementById('mailing-list-form');

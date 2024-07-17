@@ -17,11 +17,28 @@ def generate_late_conversions_report(app_start, app_end, converted_after):
         #converted_after_str = datetime.strftime(converted_after, '%Y-%m-%d %H:%M:%S.%f')
 
         query = f"""
-            SELECT ProviderName, ProviderEmail, ClientName, School, AppStart, AppEnd, ConvertedDT, LengthHr, RateProvider, PayForHours, Mileage, MilesRate, PayForMileage, TotalPay
+            SELECT ProviderName,
+                ProviderEmail,
+                ClientName,
+                School,
+                AppStart,
+                AppEnd,
+                ConvertedDT,
+                LengthHr,
+                RateProvider,
+                PayForHours,
+                Mileage,
+                MilesRate,
+                PayForMileage,
+                TotalPay
             FROM Conversions_New
             WHERE AppStart >= '{app_start}' AND AppEnd <= '{app_end}' AND ConvertedDT >= '{converted_after}'
         """
         data = pd.read_sql_query(query, engine)
+
+        data['AppStart'] = data['AppStart'].dt.strftime('%m/%d/%Y %I:%M%p')
+        data['AppEnd'] = data['AppEnd'].dt.strftime('%m/%d/%Y %I:%M%p')
+        data['ConvertedDT'] = data['ConvertedDT'].dt.strftime('%m/%d/%Y %I:%M%p')
 
         output_file = io.BytesIO()
         data.to_excel(output_file, index=False)
