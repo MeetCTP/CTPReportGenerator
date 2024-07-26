@@ -9,7 +9,7 @@ import openpyxl
 def generate_active_contacts_report(status, pg_type, service_types):
     try:
         user_name = os.getlogin()
-        connection_string = f"mssql+pymssql://MeetCTP\Joshua.Bliven:$Unlock03@CTP-DB/CRDB2"
+        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
         today_dt = datetime.now()
         today = datetime.strftime(today_dt, '%Y-%m-%d')
         engine = create_engine(connection_string)

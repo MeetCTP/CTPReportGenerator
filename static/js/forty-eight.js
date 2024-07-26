@@ -76,6 +76,45 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    function parseDate(dateString) {
+        try {
+            const trimmedDateString = dateString.trim();
+            const [datePart, timePartWithPeriod] = trimmedDateString.split(/ +(?=\d)/); // Split on one or more spaces before time
+    
+            if (!datePart || !timePartWithPeriod) {
+                console.error(`Invalid date string format: ${dateString}`);
+                return 'Invalid Date';
+            }
+    
+            const [timePart, period] = timePartWithPeriod.match(/(\d+:\d+)(AM|PM)/).slice(1, 3);
+            const [month, day, year] = datePart.split('/').map(Number);
+            let [hours, minutes] = timePart.split(':').map(Number);
+    
+            if (isNaN(month) || isNaN(day) || isNaN(year) || isNaN(hours) || isNaN(minutes)) {
+                console.error(`Invalid date values in string: ${dateString}`);
+                return 'Invalid Date';
+            }
+    
+            if (period === 'PM' && hours < 12) {
+                hours += 12;
+            }
+            if (period === 'AM' && hours === 12) {
+                hours = 0;
+            }
+    
+            const parsedDate = new Date(year, month - 1, day, hours, minutes);
+            if (isNaN(parsedDate.getTime())) {
+                console.error(`Parsed date is invalid: ${parsedDate}`);
+                return 'Invalid Date';
+            }
+    
+            return parsedDate;
+        } catch (error) {
+            console.error(`Error parsing date string "${dateString}": ${error.message}`);
+            return 'Invalid Date';
+        }
+    }
+
     function displayMailingList(mailingList) {
         mailingListContainer.innerHTML = '';
 
@@ -94,7 +133,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         warningList.forEach(item => {
             const div = document.createElement('div');
-            div.textContent = `${item.ProviderName} (${item.ProviderEmail}): ${new Date(item.AppStart).toLocaleString()}`;
+            const parsedDate = parseDate(item.AppStart);
+            const formattedDate = parsedDate !== 'Invalid Date' ? parsedDate.toLocaleString() : 'Invalid Date';
+            div.textContent = `${item.Provider} (${item.ProviderEmail}): ${formattedDate}`;
             warningListContainer.appendChild(div);
         });
     }
@@ -104,7 +145,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         nonPaymentList.forEach(item => {
             const div = document.createElement('div');
-            div.textContent = `${item.ProviderName} (${item.ProviderEmail}): ${new Date(item.AppStart).toLocaleString()}`;
+            const parsedDate = parseDate(item.AppStart);
+            const formattedDate = parsedDate !== 'Invalid Date' ? parsedDate.toLocaleString() : 'Invalid Date';
+            div.textContent = `${item.Provider} (${item.ProviderEmail}): ${formattedDate}`;
             nonPaymentListContainer.appendChild(div);
         });
     }

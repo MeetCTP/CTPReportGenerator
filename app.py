@@ -24,7 +24,7 @@ CORS(app)
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 wsgi_app = app.wsgi_app
 
-connection_string = f"mssql+pymssql://MeetCTP\Joshua.Bliven:$Unlock03@CTP-DB/CTPHOME"
+connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CTPHOME"
 engine = create_engine(connection_string)
 
 #People

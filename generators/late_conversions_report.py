@@ -9,7 +9,7 @@ import os
 def generate_late_conversions_report(app_start, app_end, converted_after):
     try:
         user_name = os.getlogin()
-        connection_string = f"mssql+pymssql://MeetCTP\Joshua.Bliven:$Unlock03@CTP-DB/CRDB"
+        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB"
         engine = create_engine(connection_string)
         
         #app_start_str = datetime.strftime(app_start, '%Y-%m-%d %H:%M:%S.%f')
