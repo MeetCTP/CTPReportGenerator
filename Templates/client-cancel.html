@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connecting The Pieces</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+</head>
+<body>
+    <main class="container-blk">
+        <section>
+            <h1>Client Cancellations Report</h1>
+            <nav class="report-nav">
+                <a href="http://ctphome/report-generator">Back to Reports</a>
+                <a href="http://ctphome">Home</a>
+            </nav>
+        </section>
+        <section>
+            <form id="report-form">
+                <div>
+                    <label for="start-date">Start Date:</label>
+                    <input type="date" id="start-date" name="start_date" required>
+                </div>
+                <input type="text" id="provider" name="provider" placeholder="Provider" >
+                <input type="text" id="client" name="client" placeholder="Client" >
+                <div class="active-row">
+                    <input class="checkboxes" type="checkbox" id="advanced" name="cancel_reason" value="Advanced Cancel">
+                    <label for="advanced">Advanced Cancel</label>
+                    <input class="checkboxes" type="checkbox" id="late" name="cancel_reason" value="Late Cancel">
+                    <label for="late">Late Cancel</label>
+                    <input class="checkboxes" type="checkbox" id="noshow" name="cancel_reason" value="No Show">
+                    <label for="noshow">No Show</label>
+                </div>
+                <button onclick="generateReport()" type="button">Generate Report</button>
+            </form>
+        </section>
+    </main>
+    <script src="../static/js/client-cancels.js"></script>
+</body>
+</html>

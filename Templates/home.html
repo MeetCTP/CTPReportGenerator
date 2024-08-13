@@ -14,22 +14,34 @@
             <a href="https://login.centralreach.com/login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Doidc%26code_challenge%3DMk8V0dlqRysMkn69aGkC16cPrkEmBu2xPNTtBCHDaSA%26code_challenge_method%3DS256%26redirect_uri%3Dhttps%253A%252F%252Fmembers.centralreach.com%252F%2523auth%252Fcallback%26response_mode%3Dquery%26response_type%3Dcode%26scope%3Doffline_access%2520openid%26state%3D7c742204924b4a6b8416890d9b5e16a3" target="_blank">Central Reach</a>
             <a href="https://meetctp.sharepoint.com/Shared%20Documents/Forms/AllItems.aspx" target="_blank">Sharepoint</a>
             <a href="http://ctphome/hipaa-training">HIPAA Training</a>
-            <a href="http://ctphome/calendar">Holiday Calendar</a>
+            <a href="http://ctphome/calendar">Calendars</a>
         </nav>
     </header>
     <section class="body-container">
         <div id="weekly-news">
             <div id="news">
                 {% for article in news_articles %}
-                    <h2>{{ article.Title }}</h2>
-                    <p>{{ article.Body }}</p>
+                    <h2 class="news-title">{{ article.Title }}</h2>
+                    <p class="news-body">{{ article.Body }}</p>
                 {% else %}
-                    <p>Put some News here.</p>
+                    <p class="news-body">Put some News here.</p>
                 {% endfor %}
             </div>
             <div id="weekly">
                 {% for qa in weekly_qas %}
-                    <p>{{ qa.Body }}</p>
+                    <div class="qa-item">
+                        <p class="question">{{ qa.Body }}</p>
+                        <div class="responses">
+                            {% for response in qa.responses %}
+                                <p class="response-item"><span class="response-body">{{ response.ResponseBody }}</span><br> - {{ response.CreatedBy }} at {{ response.CreatedAt }}</p>
+                                <br><br>
+                            {% endfor %}
+                        </div>
+                        <form class="response-form" data-question-id="{{ qa.Id }}">
+                            <textarea class="response-input" name="response" placeholder="Write your response..."></textarea>
+                            <button class="submit-btn" type="button" onclick="submitResponse(this)">Submit</button>
+                        </form>
+                    </div>
                 {% else %}
                     <p>Weekly question and responses</p>
                 {% endfor %}
@@ -37,11 +49,12 @@
         </div>
         <div id="notifications">
             {% for notification in notifications %}
-                <p>{{ notification.EventDate }}: {{ notification.Body }}</p>
+                <p class="notification-item">{{ notification.EventDate }}: {{ notification.Body }}</p>
             {% else %}
                 <p>Notification Bar</p>
             {% endfor %}
         </div>
     </section>
+    <script src="{{ url_for('static', filename='js/home-page.js') }}"></script>
 </body>
 </html>

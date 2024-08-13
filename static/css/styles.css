@@ -90,14 +90,16 @@ input, select, textarea {
     display: flex;
     flex-direction: column;
     align-items: center;
+    flex-shrink: 1;
+    flex-grow: 1;
     position: relative;
     top: 11rem;
     background-color: #e43f3f;
     box-shadow: 5px 10px #aa2626;
     border: 1px solid #000;
     border-radius: 10px;
-    width: 60%;
     margin: 0px auto;
+    width: 70%;
 }
 
 .report-row {
@@ -180,6 +182,79 @@ input, select, textarea {
     border: 1px solid #fff;
 }
 
+.news-title {
+    font-size: 2.5rem;
+    color: #000;
+    font-weight: bold;
+}
+
+.news-body {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+}
+
+.notification-item {
+    margin-bottom: 1.5rem;
+    border: 2px solid #bbb;
+    box-shadow: 3px 6px #999;
+    width: 95%;
+}
+
+.qa-item {
+    color: #666;
+}
+
+.question {
+    width: 70%;
+}
+
+.responses {
+    width: 50%;
+    background-color: #0f1024;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px auto;
+}
+
+.response-item {
+    font-size: 0.8rem;
+    background-color: #999;
+    border: 1px solid #666;
+    box-shadow: 3px 6px #444;
+    border-radius: 10px;
+    width: 85%;
+    color: #000;
+    padding: 5px;
+    margin-top: 5px;
+}
+
+.response-body {
+    font-size: 1.2rem;
+}
+
+.response-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.response-input {
+    width: 20rem;
+    height: 2rem;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 2px 4px #666;
+}
+
+.submit-btn {
+    border: 1px solid #000;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
 #logo {
     width: 20rem;
     height: 10rem;
@@ -194,6 +269,9 @@ input, select, textarea {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: auto;
     background-color: #4747e2;
     border: 1px solid #000;
     border-radius: 10px;
@@ -215,10 +293,14 @@ input, select, textarea {
 
 #news {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    max-height: 700px;
+    overflow: auto;
     background-color: #e43f3f;
-    height: 600px;
     width: 100%;
     margin: 2rem 2rem 2rem 2rem;
     border: 1px solid #000;
@@ -229,10 +311,13 @@ input, select, textarea {
 
 #weekly {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: auto;
     background-color: #ddce01;
-    height: 500px;
     width: 100%;
     margin: 2rem 2rem 2rem 2rem;
     border: 1px solid #000;

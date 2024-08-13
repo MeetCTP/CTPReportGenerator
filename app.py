@@ -9,9 +9,14 @@ from generators.no_show_late_cancel_report import generate_no_show_late_cancel_r
 from generators.provider_sessions_report import generate_provider_sessions_report
 from generators.provider_connections_report import generate_provider_connections_report
 from generators.forty_eight_conversions import generate_unconverted_time_report
+from generators.client_cancellation_report import generate_client_cancel_report
 from generators.util_tracker import generate_util_tracker
 from flask_cors import CORS
 from datetime import datetime
+from io import BytesIO
+from logging.handlers import RotatingFileHandler
+import datetime as dt
+import json
 import urllib.parse
 import logging
 import traceback
@@ -42,25 +47,26 @@ stacey = f"Stacey.A.Nardo"
 christie = f"Christina.K.Sampson"
 greg = f"Gregory.T.Hughes"
 jesse = f"Jesse.Petrecz"
-saqoya = f"Saqoya.S.Weldon"
 olivia = f"Olivia.a.DiPasquale"
+megan = f"Megan.Leighton"
+tiffany = f"Tiffany.Akai"
 
 #Groups
 admin_group = [josh, fabian, lisa, admin, cari]
 recruiting_group = [amy, stacey]
-clinical_group = [saqoya, jesse]
+clinical_group = [megan, jesse]
 accounting_group = [eileen, greg]
-student_services_group = [eileen, christie, olivia]
+student_services_group = [eileen, christie, olivia, tiffany]
 human_resources_group = [aaron, linda]
 it_group = [josh, fabian, dan]
 testing_group = [josh, fabian]
-site_mod_group = [josh, fabian, lisa, admin, eileen]
+site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy]
 
 def handle_submit_form_data(table, data):
     if table == 'News_Posts':
         query = text("""
-        INSERT INTO dbo.News_Posts (Title, Body, Attachment, CreatedBy, RowModifiedAt) 
-        VALUES (:Title, :Body, :Attachment, :CreatedBy, :RowModifiedAt)
+        INSERT INTO dbo.News_Posts (Title, Body, CreatedBy, RowModifiedAt) 
+        VALUES (:Title, :Body, :CreatedBy, :RowModifiedAt)
         """)
     elif table == 'Notifications':
         query = text("""
@@ -73,26 +79,47 @@ def handle_submit_form_data(table, data):
         VALUES (:Body, :CreatedBy, :RowModifiedAt)
         """)
 
-    # Execute the query with parameters
     try:
         with engine.connect() as connection:
             connection.execute(query, data)
+            connection.commit()
         print(f"Query executed successfully: {query}, with data: {data}")
     except Exception as e:
-        print(f"Error executing query: {e}")
+        return print(e)
 
 # Define a function to fetch data from the database
 def fetch_data():
     news_query = text("SELECT Title, Body FROM dbo.News_Posts")
     notifications_query = text("SELECT EventDate, Body FROM dbo.Notifications")
-    weekly_qa_query = text("SELECT Body FROM dbo.WeeklyQA")
+    weekly_qa_query = text("SELECT QAId, Body FROM dbo.WeeklyQA")
+    responses_query = text("""
+        SELECT QuestionId, ResponseBody, CreatedBy, CreatedAt
+        FROM dbo.QAResponseView
+    """)
 
     with engine.connect() as connection:
         news_articles = connection.execute(news_query).fetchall()
         notifications = connection.execute(notifications_query).fetchall()
         weekly_qas = connection.execute(weekly_qa_query).fetchall()
+        responses = connection.execute(responses_query).fetchall()
 
-    return news_articles, notifications, weekly_qas
+    notifications.reverse()
+    weekly_qas.reverse()
+    news_articles.reverse()
+    #datetime.strftime(notifications.EventDate, '%m/%d/%Y')
+
+    # Create a dictionary to map QAId to their responses
+    qa_dict = {qa.QAId: {'Id': qa.QAId, 'Body': qa.Body, 'responses': []} for qa in weekly_qas}
+    
+    for response in responses:
+        if response.QuestionId in qa_dict:
+            qa_dict[response.QuestionId]['responses'].append({
+                'ResponseBody': response.ResponseBody,
+                'CreatedBy': response.CreatedBy,
+                'CreatedAt': datetime.strftime(response.CreatedAt, '%m/%d/%Y %I:%M%p')
+            })
+
+    return news_articles, notifications, list(qa_dict.values())
 
 @app.route('/test-user')
 def test_user():
@@ -103,55 +130,6 @@ def test_user():
     else:
         return "Hello, anonymous user!"
 
-def set_site_data():
-    username = request.environ.get('REMOTE_USER')
-    username = str(username).split('\\')[-1]
-    if username in site_mod_group:
-        if request.method == 'POST':
-            try:
-                form_type = request.form.get('form_type')
-                if form_type == 'news':
-                    title = request.form['Title']
-                    body = request.form['Body']
-                    attachment_file = request.files['filename'] if 'filename' in request.files else None
-                    attachment = attachment_file.read() if attachment_file else None
-                    data = {
-                        'Title': title,
-                        'Body': body,
-                        'Attachment': attachment,
-                        'CreatedBy': username,
-                        'RowModifiedAt': datetime.now()
-                    }
-                    handle_submit_form_data('News_Posts', data)
-                
-                elif form_type == 'notification':
-                    event_date = request.form['Date']
-                    body = request.form['Body']
-                    data = {
-                        'EventDate': event_date,
-                        'Body': body,
-                        'CreatedBy': username,
-                        'RowModifiedAt': datetime.now()
-                    }
-                    handle_submit_form_data('Notifications', data)
-                
-                elif form_type == 'qa':
-                    body = request.form['Body']
-                    data = {
-                        'Body': body,
-                        'CreatedBy': username,
-                        'RowModifiedAt': datetime.now()
-                    }
-                    handle_submit_form_data('WeeklyQA', data)
-
-                return redirect(url_for('home'))
-            except Exception as e:
-                print(f"Error: {e}")
-                return f"An internal error occurred: {e}", 500
-        return render_template('site_mod.html')
-    else:
-        return redirect(url_for('access_denied'))
-
 @app.route('/')
 def home():
     news_articles, notifications, weekly_qas = fetch_data()
@@ -159,6 +137,72 @@ def home():
                            news_articles=news_articles, 
                            notifications=notifications, 
                            weekly_qas=weekly_qas)
+
+@app.route('/submit-response', methods=['POST'])
+def submit_response():
+    data = request.get_json()
+    question_id = data['questionId']
+    response_body = data['responseBody']
+    username = request.environ.get('REMOTE_USER')
+    username = str(username).split('\\')[-1]
+
+    response_data = {
+        'QuestionId': question_id,
+        'ResponseBody': response_body,
+        'CreatedBy': username,
+        'CreatedAt': datetime.now()
+    }
+
+    query = text("""
+        INSERT INTO dbo.WeeklyQAResponses (QuestionId, ResponseBody, CreatedBy, CreatedAt)
+        VALUES (:QuestionId, :ResponseBody, :CreatedBy, :CreatedAt)
+    """)
+
+    try:
+        with engine.connect() as connection:
+            connection.execute(query, response_data)
+            connection.commit()
+        return jsonify({'success': True, 'createdBy': username}), 200
+    except Exception as e:
+        print(f"Error submitting response: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/set')
+def site_mod_page():
+    username = request.environ.get('REMOTE_USER')
+    username = str(username).split('\\')[-1]
+    if username in site_mod_group:
+        return render_template('site_mod.html')
+    else:
+        return redirect(url_for('access_denied'))
+
+@app.route('/set/submit-form-data', methods=['POST'])
+def submit_form_data():
+    username = request.environ.get('REMOTE_USER')
+    username = str(username).split('\\')[-1]
+    form_data = request.form.to_dict()
+    form_type = form_data.pop('form_type', None)
+    
+    form_data.update({
+        'CreatedBy': username,
+        'RowModifiedAt': datetime.now()
+    })
+
+    if 'filename' in request.files:
+        file = request.files['filename']
+        file_data = file.read()
+        form_data['Attachment'] = file_data
+    else:
+        form_data['Attachment'] = None
+
+    if form_type == 'news':
+        handle_submit_form_data('News_Posts', form_data)
+    elif form_type == 'notification':
+        handle_submit_form_data('Notifications', form_data)
+    elif form_type == 'qa':
+        handle_submit_form_data('WeeklyQA', form_data)
+
+    return jsonify({'message': 'Form submitted successfully'}), 200
 
 @app.route('/report-generator')
 def reports():
@@ -227,6 +271,10 @@ company_role_options = ["CompanyRole: Employee", "CompanyRole: Contractor"]
 @app.route('/report-generator/forty-eight-hour-warning')
 def forty_eight_warning():
     return render_template('forty-eight.html', company_roles=company_role_options)
+
+@app.route('/report-generator/client-cancels')
+def client_cancellations():
+    return render_template('client-cancel.html')
 
 @app.route('/report-generator/agora-match/generate-report', methods=['POST'])
 def generate_report():
@@ -436,5 +484,29 @@ def get_mailing_list():
         except Exception as e:
             print('Exception occurred: ', e)
             return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
+    
+@app.route('/report-generator/client-cancels/generate-report', methods=['POST'])
+def handle_generate_client_cancel_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        range_start = data.get('range_start')
+        provider = data.get('provider')
+        client = data.get('client')
+        cancel_reasons = data.get('cancel_reasons', [])
+
+        if not cancel_reasons:
+            return jsonify({"error": "At least one cancellation reason must be selected"}), 400
+        
+        try:
+            report_file = generate_client_cancel_report(provider, client, cancel_reasons, range_start)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=f"Client-Cancellation-Report.xlsx"
+            )
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415

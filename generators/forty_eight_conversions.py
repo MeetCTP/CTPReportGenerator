@@ -27,65 +27,70 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
         """
         data = pd.read_sql_query(query, engine)
 
+        # Convert relevant columns to datetime
         data['ServiceDate'] = pd.to_datetime(data['ServiceDate'])
         data['ConvertedDT'] = pd.to_datetime(data['ConvertedDT'])
         data['IsLate'] = (data['ConvertedDT'] - data['ServiceDate']).dt.days > 2
 
+        # Filter data
         data = data[(data['Status'] == 'Un-Converted') | (data['IsLate'])]
-        
-        contractor_data = data[data['CompanyRole'] == 'CompanyRole: Contractor']
 
         # Fetch existing data from WarnedProviders and ProviderNonPayment tables
         warning_list = pd.read_sql_query("SELECT * FROM WarnedProviders", engine)
         non_payment_list = pd.read_sql_query("SELECT * FROM ProviderNonPayment", engine)
 
-        #Check if WarnedProviders is empty
+        # Check if WarnedProviders is empty
         is_first_run = warning_list.empty
 
-        if is_first_run:
-            data.to_sql('WarnedProviders', engine, if_exists='append', index=False)
-        else:
-            # Create sets for faster lookup
-            warning_set = set((row['ProviderEmail'], row['AppStart']) for _, row in warning_list.iterrows())
-            non_payment_set = set((row['ProviderEmail'], row['AppStart']) for _, row in non_payment_list.iterrows())
-            existing_providers = set(row['Provider'] for _, row in warning_list.iterrows())
+        # Relevant columns for WarnedProviders and ProviderNonPayment
+        relevant_columns = ['Provider', 'Client', 'ProviderEmail', 'ServiceDate', 'AppStart', 'AppEnd', 'Status', 'CompanyRole', 'ConvertedDT']
 
+        if is_first_run:
+            data[relevant_columns].to_sql('WarnedProviders', engine, if_exists='append', index=False)
+        else:
+            # Load existing data from WarnedProviders and ProviderNonPayment tables
+            existing_warned_df = pd.read_sql('SELECT Provider, AppStart FROM WarnedProviders', engine)
+            existing_non_payment_df = pd.read_sql('SELECT Provider, AppStart FROM ProviderNonPayment', engine)
+
+            # Create sets for efficient lookup
+            warned_providers_set = set(zip(existing_warned_df['Provider'], existing_warned_df['AppStart']))
+            non_payment_providers_set = set(zip(existing_non_payment_df['Provider'], existing_non_payment_df['AppStart']))
+
+            # Function to check if a row is in a set
+            def is_in_set(row, check_set):
+                return (row['Provider'], row['AppStart']) in check_set
+
+            # Lists to hold new rows to be inserted
             new_warning_list = []
             new_non_payment_list = []
 
             for _, row in data.iterrows():
                 provider = row['Provider']
-                provider_email = row['ProviderEmail']
                 app_start = row['AppStart']
-                app_end = row['AppEnd']
-                client = row['Client']
-                service_date = row['ServiceDate']
-                status = row['Status']
-                company_role = row['CompanyRole']
-                converted_dt = row['ConvertedDT']
-
-                if (provider_email, app_start) in warning_set:
-                    # If the exact row exists in WarnedProviders, skip it
+                
+                if is_in_set(row, warned_providers_set):
+                    # Skip rows already in WarnedProviders
                     continue
-                elif provider in existing_providers:
-                    # If the provider is already in WarnedProviders but the exact session is not, add to NonPayment
-                    if (provider_email, app_start) not in non_payment_set:
-                        new_non_payment_list.append((provider, client, provider_email, service_date, app_start, app_end, status, company_role, converted_dt))
-                        non_payment_set.add((provider_email, app_start))
+                elif is_in_set(row, non_payment_providers_set):
+                    # Skip rows already in ProviderNonPayment
+                    continue
+                elif provider in existing_warned_df['Provider'].values:
+                    # Add to non-payment list if provider already warned (but row not in any list yet)
+                    new_non_payment_list.append(row)
+                    non_payment_providers_set.add((provider, app_start))
                 else:
-                    # If the provider is not in WarnedProviders, add to WarnedProviders
-                    new_warning_list.append((provider, client, provider_email, service_date, app_start, app_end, status, company_role, converted_dt))
-                    warning_set.add((provider_email, app_start))
-                    existing_providers.add(provider)
+                    # Add to warned list if provider is new
+                    new_warning_list.append(row)
+                    warned_providers_set.add((provider, app_start))
 
-            # Insert new warnings and non-payments into the database
+            # Convert lists to DataFrames and add to the database
             if new_warning_list:
-                warning_df = pd.DataFrame(new_warning_list, columns=['Provider', 'Client', 'ProviderEmail', 'ServiceDate', 'AppStart', 'AppEnd', 'Status', 'CompanyRole', 'ConvertedDT'])
-                warning_df.to_sql('WarnedProviders', engine, if_exists='append', index=False)
+                warning_df = pd.DataFrame(new_warning_list, columns=data.columns)
+                warning_df[relevant_columns].to_sql('WarnedProviders', engine, if_exists='append', index=False)
 
             if new_non_payment_list:
-                non_payment_df = pd.DataFrame(new_non_payment_list, columns=['Provider', 'Client', 'ProviderEmail', 'ServiceDate', 'AppStart', 'AppEnd', 'Status', 'CompanyRole', 'ConvertedDT'])
-                non_payment_df.to_sql('ProviderNonPayment', engine, if_exists='append', index=False)
+                non_payment_df = pd.DataFrame(new_non_payment_list, columns=data.columns)
+                non_payment_df[relevant_columns].to_sql('ProviderNonPayment', engine, if_exists='append', index=False)
 
         # Prepare mailing list
         contractor_data = data[data['CompanyRole'] == 'CompanyRole: Contractor']
