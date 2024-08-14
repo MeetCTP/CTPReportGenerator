@@ -23,64 +23,79 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
         prev_range_start = past_range_start + relativedelta(months=1)
         past_range_end = prev_range_start - timedelta(days=1)
         prev_range_end = curr_range_start - timedelta(days=1)
-        query_all_periods = f"""
-            SELECT *, 
-                CASE 
-                    WHEN CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start}' AND '{past_range_end}' THEN 'PastMonth' 
-                    WHEN CONVERT(DATE, ServiceDate, 101) BETWEEN '{prev_range_start}' AND '{prev_range_end}' THEN 'PrevMonth' 
-                    ELSE 'CurrMonth' 
-                END AS Period 
-            FROM ClientCancellationView 
-            WHERE CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start}' AND '{curr_range_end}' AND CancelledReason IN ({', '.join([f"'{c}'" for c in cancel_reasons])})
+        query_past_month = f"""
+            SELECT DISTINCT * FROM ClientCancellationView
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start.strftime('%Y-%m-%d')}' AND '{past_range_end.strftime('%Y-%m-%d')}') 
+            AND (CancelledReason IN ({', '.join([f"'{s}'" for s in cancel_reasons])}))
         """
         if provider:
-            query_all_periods += f" AND Provider = '{provider}'"
+            query_past_month += f" AND Provider = '{provider}'"
         if client:
-            query_all_periods += f" AND Client = '{client}'"
-        query_all_periods += " ORDER BY Client, AppStart, BillingCode;"
+            query_past_month += f" AND Client = '{client}'"
+        query_past_month += " ORDER BY Client, AppStart;"
 
-        data_all_periods = pd.read_sql_query(query_all_periods, engine)
+        # Query for the previous month data
+        query_prev_month = f"""
+            SELECT DISTINCT * FROM ClientCancellationView
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{prev_range_start.strftime('%Y-%m-%d')}' AND '{prev_range_end.strftime('%Y-%m-%d')}') 
+            AND (CancelledReason IN ({', '.join([f"'{s}'" for s in cancel_reasons])}))
+        """
+        if provider:
+            query_prev_month += f" AND Provider = '{provider}'"
+        if client:
+            query_prev_month += f" AND Client = '{client}'"
+        query_prev_month += " ORDER BY Client, AppStart;"
+
+        # Query for the current month data
+        query_curr_month = f"""
+            SELECT DISTINCT * FROM ClientCancellationView
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{curr_range_start.strftime('%Y-%m-%d')}' AND '{curr_range_end.strftime('%Y-%m-%d')}') 
+            AND (CancelledReason IN ({', '.join([f"'{s}'" for s in cancel_reasons])}))
+        """
+        if provider:
+            query_curr_month += f" AND Provider = '{provider}'"
+        if client:
+            query_curr_month += f" AND Client = '{client}'"
+        query_curr_month += " ORDER BY Client, AppStart;"
 
         all_past_query = f"""
             SELECT * from ClientCancellationView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start.strftime('%Y-%m-%d')}' AND '{past_range_end.strftime('%Y-%m-%d')}');
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start.strftime('%Y-%m-%d')}' AND '{past_range_end.strftime('%Y-%m-%d')}') AND 
+            ORDER BY Client, AppStart;
         """
 
         all_prev_query = f"""
             SELECT * from ClientCancellationView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{prev_range_start.strftime('%Y-%m-%d')}' AND '{prev_range_end.strftime('%Y-%m-%d')}');
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{prev_range_start.strftime('%Y-%m-%d')}' AND '{prev_range_end.strftime('%Y-%m-%d')}') AND 
+            ORDER BY Client, AppStart;
         """
 
         all_curr_query = f"""
             SELECT * from ClientCancellationView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{curr_range_start.strftime('%Y-%m-%d')}' AND '{curr_range_end.strftime('%Y-%m-%d')}');
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{curr_range_start.strftime('%Y-%m-%d')}' AND '{curr_range_end.strftime('%Y-%m-%d')}') AND 
+            ORDER BY Client, AppStart;
         """
 
         # Fetch data for each period
-        data_past_month = data_all_periods[data_all_periods['Period'] == 'PastMonth']
-        data_prev_month = data_all_periods[data_all_periods['Period'] == 'PrevMonth']
-        data_curr_month = data_all_periods[data_all_periods['Period'] == 'CurrMonth']
+        data_past_month = pd.read_sql_query(query_past_month, engine)
+        data_prev_month = pd.read_sql_query(query_prev_month, engine)
+        data_curr_month = pd.read_sql_query(query_curr_month, engine)
         all_past_data = pd.read_sql_query(all_past_query, engine)
         all_prev_data = pd.read_sql_query(all_prev_query, engine)
         all_curr_data = pd.read_sql_query(all_curr_query, engine)
 
-        #Convert pandas dataframes to dask dataframes for processing
-        all_past_data_dd = dd.from_pandas(all_past_data, npartitions=4)
-        all_prev_data_dd = dd.from_pandas(all_prev_data, npartitions=4)
-        all_curr_data_dd = dd.from_pandas(all_curr_data, npartitions=4)
+        # Calculate ThreeCancels and CancellationPercentage for each period
+        three_cancels_past = check_three_cancels_in_a_row(all_past_data, cancel_reasons)
+        cancel_percentage_past = calculate_cancellation_percentage(all_past_data, cancel_reasons)
+        
+        three_cancels_prev = check_three_cancels_in_a_row(all_prev_data, cancel_reasons)
+        cancel_percentage_prev = calculate_cancellation_percentage(all_prev_data, cancel_reasons)
+        
+        three_cancels_curr = check_three_cancels_in_a_row(all_curr_data, cancel_reasons)
+        cancel_percentage_curr = calculate_cancellation_percentage(all_curr_data, cancel_reasons)
 
         # Merge data for final report
         combined_data = pd.concat([data_past_month, data_prev_month, data_curr_month])
-
-        # Calculate ThreeCancels and CancellationPercentage for each period
-        three_cancels_past = check_three_cancels_in_a_row(all_past_data)
-        cancel_percentage_past = calculate_cancellation_percentage(all_past_data)
-        
-        three_cancels_prev = check_three_cancels_in_a_row(all_prev_data)
-        cancel_percentage_prev = calculate_cancellation_percentage(all_prev_data)
-        
-        three_cancels_curr = check_three_cancels_in_a_row(all_curr_data)
-        cancel_percentage_curr = calculate_cancellation_percentage(all_curr_data)
 
         # Assign the calculated values to the final data
         combined_data['ThreeCancels_FirstMonth'] = combined_data['Client'].map(three_cancels_past)
@@ -106,15 +121,54 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
     finally:
         engine.dispose()
 
-@njit
-def check_three_cancels_in_a_row(data):
-    result = np.zeros(len(data), dtype=np.int32)
-    for i in range(2, len(data)):
-        if data[i] == 1 and data[i-1] == 1 and data[i-2] == 1:
-            result[i] = 1
+def check_three_cancels_in_a_row(data, cancel_reasons):
+    current_client = None
+    cancel_count = 0
+    result = {}
+
+    for index, row in data.iterrows():
+        client = row['Client']
+        reason = row['CancelledReason']
+
+        if client != current_client:
+            current_client = client
+            cancel_count = 0
+
+        if reason in cancel_reasons:
+            cancel_count += 1
+            if cancel_count == 3:
+                result[client] = True
+        else:
+            cancel_count = 0
+
+    for client in data['Client'].unique():
+        if client not in result:
+            result[client] = False
+
     return result
 
-@njit
-def calculate_cancellation_percentage(data):
-    cancel_count = data.sum()
-    return (cancel_count / len(data)) * 100
+def calculate_cancellation_percentage(data, cancel_reasons):
+    client_sessions = {}
+    client_cancellations = {}
+
+    for index, row in data.iterrows():
+        client = row['Client']
+        reason = row['CancelledReason']
+
+        if client not in client_sessions:
+            client_sessions[client] = 0
+            client_cancellations[client] = 0
+
+        client_sessions[client] += 1
+
+        if reason in cancel_reasons:
+            client_cancellations[client] += 1
+
+    cancellation_percentages = {}
+
+    for client in client_sessions:
+        total_sessions = client_sessions[client]
+        cancellations = client_cancellations[client]
+        cancellation_percentages[client] = (cancellations / total_sessions) * 100
+
+    return cancellation_percentages
