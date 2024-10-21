@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
 from sqlalchemy import create_engine, text
+import msal
 import pandas as pd
+from flask_talisman import Talisman
 from generators.appointment_match_agora import generate_appointment_agora_report
 from generators.appointment_match_insight import generate_appointment_insight_report
 from generators.active_contacts_report import generate_active_contacts_report
@@ -9,6 +11,7 @@ from generators.no_show_late_cancel_report import generate_no_show_late_cancel_r
 from generators.provider_sessions_report import generate_provider_sessions_report
 from generators.provider_connections_report import generate_provider_connections_report
 from generators.forty_eight_conversions import generate_unconverted_time_report
+from generators.forty_eight_conversions import reminder_email
 from generators.client_cancellation_report import generate_client_cancel_report
 from generators.util_tracker import generate_util_tracker
 from flask_cors import CORS
@@ -23,8 +26,17 @@ import traceback
 import tempfile
 import os
 
+csp = {
+    'default-src': "'self'",
+    'style-src': [
+        "'self'", 
+        "'unsafe-inline'",
+    ]
+}
+
 app = Flask(__name__)
 CORS(app)
+#Talisman(app, content_security_policy=csp, force_https=True)
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 wsgi_app = app.wsgi_app
@@ -44,21 +56,20 @@ eileen = f"Eileen.H.Council"
 cari = f"Cari.Tomczyk"
 amy = f"Amy.P.Ronen"
 stacey = f"Stacey.A.Nardo"
-christie = f"Christina.K.Sampson"
+christi = f"Christina.K.Sampson"
 greg = f"Gregory.T.Hughes"
 jesse = f"Jesse.Petrecz"
 olivia = f"Olivia.a.DiPasquale"
 megan = f"Megan.Leighton"
-tiffany = f"Tiffany.Akai"
 
 #Groups
-admin_group = [josh, fabian, lisa, admin, cari]
+admin_group = [lisa, admin, cari]
 recruiting_group = [amy, stacey]
 clinical_group = [megan, jesse]
-accounting_group = [eileen, greg]
-student_services_group = [eileen, christie, olivia, tiffany]
+accounting_group = [eileen, greg, cari]
+student_services_group = [eileen, christi, olivia]
 human_resources_group = [aaron, linda]
-it_group = [josh, fabian, dan]
+it_group = [fabian, dan]
 testing_group = [josh, fabian]
 site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy]
 
@@ -86,11 +97,41 @@ def handle_submit_form_data(table, data):
         print(f"Query executed successfully: {query}, with data: {data}")
     except Exception as e:
         return print(e)
+    
+def handle_delete_homepage_item(table, id):
+    try:
+        # Ensure the id is an integer
+        id = int(id)
+    except ValueError:
+        print(f"Invalid id value: {id}")
+        return
+
+    if table == 'News_Posts':
+        query = text("""
+        DELETE FROM dbo.News_Posts WHERE NewsId = :id
+        """)
+    elif table == 'Notifications':
+        query = text("""
+        DELETE FROM dbo.Notifications WHERE NotifId = :id
+        """)
+    elif table == 'WeeklyQA':
+        query = text("""
+        DELETE FROM dbo.WeeklyQA WHERE QAId = :id;
+        DELETE FROM dbo.WeeklyQAResponses WHERE QuestionId = :id;
+        """)
+
+    try:
+        with engine.connect() as connection:
+            connection.execute(query, {'id': id})
+            connection.commit()
+        print(f"Query executed successfully: {query}, with data: {id}")
+    except Exception as e:
+        return print(e)
 
 # Define a function to fetch data from the database
 def fetch_data():
-    news_query = text("SELECT Title, Body FROM dbo.News_Posts")
-    notifications_query = text("SELECT EventDate, Body FROM dbo.Notifications")
+    news_query = text("SELECT NewsId, Title, Body FROM dbo.News_Posts")
+    notifications_query = text("SELECT NotifId, EventDate, Body FROM dbo.Notifications")
     weekly_qa_query = text("SELECT QAId, Body FROM dbo.WeeklyQA")
     responses_query = text("""
         SELECT QuestionId, ResponseBody, CreatedBy, CreatedAt
@@ -132,11 +173,15 @@ def test_user():
 
 @app.route('/')
 def home():
+    username = request.environ.get('REMOTE_USER')
+    username = str(username).split('\\')[-1]
     news_articles, notifications, weekly_qas = fetch_data()
+    is_mod = username in site_mod_group
     return render_template('home.html', 
                            news_articles=news_articles, 
                            notifications=notifications, 
-                           weekly_qas=weekly_qas)
+                           weekly_qas=weekly_qas,
+                           is_mod=is_mod)
 
 @app.route('/submit-response', methods=['POST'])
 def submit_response():
@@ -166,6 +211,19 @@ def submit_response():
     except Exception as e:
         print(f"Error submitting response: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+    
+@app.route('/delete-home-item', methods=['POST'])
+def delete_item():
+    data = request.get_json()
+    item_id = int(data['id'])
+    table_name = data['table']
+    
+    try:
+        handle_delete_homepage_item(table_name, item_id)
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/set')
 def site_mod_page():
@@ -210,7 +268,7 @@ def reports():
     username = request.environ.get('REMOTE_USER')
     username = str(username).split('\\')[-1]
     if username in admin_group:
-        return render_template('all-reports.html')
+        return render_template('all-prod-reports.html')
     elif username in clinical_group:
         return render_template('clinical-reports.html')
     elif username in student_services_group:
@@ -275,6 +333,10 @@ def forty_eight_warning():
 @app.route('/report-generator/client-cancels')
 def client_cancellations():
     return render_template('client-cancel.html')
+
+@app.route('/report-generator/clinical-util-tracker')
+def clinical_util():
+    return render_template('clinical-util.html')
 
 @app.route('/report-generator/agora-match/generate-report', methods=['POST'])
 def generate_report():
@@ -465,9 +527,14 @@ def handle_generate_forty_eight_hour_report():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415
-    
+
+cached_warning_list = []
+cached_non_payment_list = []
+
 @app.route('/report-generator/forty-eight-hour-warning/get-mailing-list', methods=['POST'])
 def get_mailing_list():
+    global cached_warning_list, cached_non_payment_list
+
     if request.headers['Content-Type'] == 'application/json':
         data = request.json
         selected_roles = data.get('company_roles', [])
@@ -476,11 +543,29 @@ def get_mailing_list():
         
         try:
             mailing_list, warning_list, non_payment_list, _ = generate_unconverted_time_report(selected_roles, start_date, end_date)
+            cached_warning_list = warning_list
+            cached_non_payment_list = non_payment_list
             return jsonify({
                 'mailing_list': mailing_list,
                 'warning_list': warning_list,
                 'non_payment_list': non_payment_list
             })
+        except Exception as e:
+            print('Exception occurred: ', e)
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
+
+@app.route('/report-generator/forty-eight-hour-warning/send-emails', methods=['POST'])
+def send_emails():
+    global cached_warning_list, cached_non_payment_list
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.json
+        selected_providers = data.get('selectedProviders', {})
+
+        try:
+            reminder_email(selected_providers, cached_warning_list, cached_non_payment_list)
+            return jsonify({'message': 'Emails sent successfully!'}), 200
         except Exception as e:
             print('Exception occurred: ', e)
             return jsonify({'error': str(e)}), 500
@@ -505,6 +590,29 @@ def handle_generate_client_cancel_report():
                 report_file,
                 as_attachment=True,
                 download_name=f"Client-Cancellation-Report.xlsx"
+            )
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
+
+@app.route('/report-generator/clinical-util-tracker/generate-report', methods=['POST'])
+def handle_generate_clinical_util_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        provider = data.get('provider')
+
+        if not provider:
+            return jsonify({"error": "Provider must be specified."})
+
+        try:
+            report_file = generate_util_tracker(start_date, end_date, provider)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=f"Clinical_Util_Tracker_'{provider}'_'{start_date}'-'{end_date}'.xlsx"
             )
         except Exception as e:
             return jsonify({"error": str(e)}), 500

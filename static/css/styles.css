@@ -74,6 +74,16 @@ input, select, textarea {
     background-color: #bbb;
 }
 
+/*
+main {
+    width: 100%;
+    margin: 0px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+}
+*/
+
 .rmv-margin {
     margin: 0px;
 }
@@ -84,6 +94,12 @@ input, select, textarea {
 
 .checkboxes {
     width: 2rem;
+}
+
+.calendar-label {
+    font-size: 3rem;
+    font-weight: bold;
+    text-decoration: underline;
 }
 
 .report-container {
@@ -167,9 +183,28 @@ input, select, textarea {
     float: right;
 }
 
+/*
+.side-banner {
+    height: 100%;
+    margin: 3rem;
+    position: relative;
+    top: 20rem;
+}
+*/
+
 .pdf-container {
     position: relative;
     top: 10rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.calendar-item-group {
+    border: 1px solid #fff;
+    width: 60%;
+    margin: 3rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -177,8 +212,8 @@ input, select, textarea {
 
 .pdf-viewer {
     width: 90%;
-    height: 40rem;
-    margin: 1rem;
+    height: 35rem;
+    margin: 3rem;
     border: 1px solid #fff;
 }
 
@@ -255,11 +290,25 @@ input, select, textarea {
     cursor: pointer;
 }
 
+.delete-btn {
+    width: 4rem;
+    background-color: #444;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 10px;
+    margin: 0px;
+}
+
+.client-cancel-date {
+    margin-bottom: 1rem;
+}
+
 #logo {
     width: 20rem;
     height: 10rem;
     border: 1px solid #000;
     border-radius: 10px;
+    box-shadow: 2px 4px #666;
 }
 
 #notifications {
@@ -329,7 +378,7 @@ input, select, textarea {
 #report-form {
     display: flex;
     flex-direction: column;
-    width: 30%;
+    width: 35%;
 }
 
 #scrollcheck {

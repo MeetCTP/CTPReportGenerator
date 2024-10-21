@@ -1,3 +1,12 @@
+document.addEventListener('DOMContentLoaded', function() {
+    var generateButton = document.getElementById('generate');
+    if (generateButton) {
+        generateButton.addEventListener('click', function() {
+            generateReport();
+        });
+    }
+});
+
 function generateReport() {
     var form = document.getElementById('report-form');
     var formData = new FormData(form);

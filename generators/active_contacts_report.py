@@ -4,6 +4,7 @@ from datetime import datetime
 import pymssql
 import io
 import os
+import re
 import openpyxl
 
 def generate_active_contacts_report(status, pg_type, service_types):
@@ -32,9 +33,15 @@ def generate_active_contacts_report(status, pg_type, service_types):
         report_data = pd.read_sql_query(active_contacts_query, engine)
         report_data.drop_duplicates(subset=['ContactId'], inplace=True)
 
+        if 'Email' in report_data.columns:
+            report_data['IsValidEmail'] = report_data['Email'].apply(lambda email: email_validation(email))
+        
+        report_data = report_data[report_data['IsValidEmail'] == True]
+        report_data.drop(columns=['IsValidEmail'], inplace=True)
+
         output_file = io.BytesIO()
         report_data.to_excel(output_file, index=False)
-        output_file.seek(0)  # Reset the file pointer to the beginning of the BytesIO object
+        output_file.seek(0)
         return output_file
 
     except Exception as e:
@@ -43,3 +50,9 @@ def generate_active_contacts_report(status, pg_type, service_types):
 
     finally:
         engine.dispose()
+
+def email_validation(email):
+    email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if email is None:
+        return False
+    return bool(re.match(email_regex, email))

@@ -21,26 +21,38 @@
         <div id="weekly-news">
             <div id="news">
                 {% for article in news_articles %}
-                    <h2 class="news-title">{{ article.Title }}</h2>
-                    <p class="news-body">{{ article.Body }}</p>
+                    <div class="item-container">
+                        <h2 class="news-title">{{ article.Title }}
+                            {% if is_mod %}
+                                <button class="delete-btn" data-id="{{article.NewsId}}" name="News_Posts">Delete</button>
+                            {% endif %}
+                        </h2>
+                        <p class="news-body">{{ article.Body }}</p>
+                    </div>
                 {% else %}
                     <p class="news-body">Put some News here.</p>
                 {% endfor %}
             </div>
             <div id="weekly">
                 {% for qa in weekly_qas %}
-                    <div class="qa-item">
-                        <p class="question">{{ qa.Body }}</p>
-                        <div class="responses">
-                            {% for response in qa.responses %}
-                                <p class="response-item"><span class="response-body">{{ response.ResponseBody }}</span><br> - {{ response.CreatedBy }} at {{ response.CreatedAt }}</p>
-                                <br><br>
-                            {% endfor %}
+                    <div class="item-container">
+                        <div class="qa-item">
+                            <p class="question">{{ qa.Body }}
+                                {% if is_mod %}
+                                    <button class="delete-btn" data-id="{{qa.Id}}" name="WeeklyQA">Delete</button>
+                                {% endif %}
+                            </p>
+                            <div class="responses">
+                                {% for response in qa.responses %}
+                                    <p class="response-item"><span class="response-body">{{ response.ResponseBody }}</span><br> - {{ response.CreatedBy }} at {{ response.CreatedAt }}</p>
+                                    <br><br>
+                                {% endfor %}
+                            </div>
+                            <form class="response-form" data-question-id="{{ qa.Id }}">
+                                <textarea class="response-input" name="response" placeholder="Write your response..."></textarea>
+                                <button class="submit-btn" type="button" onclick="submitResponse(this)">Submit</button>
+                            </form>
                         </div>
-                        <form class="response-form" data-question-id="{{ qa.Id }}">
-                            <textarea class="response-input" name="response" placeholder="Write your response..."></textarea>
-                            <button class="submit-btn" type="button" onclick="submitResponse(this)">Submit</button>
-                        </form>
                     </div>
                 {% else %}
                     <p>Weekly question and responses</p>
@@ -49,7 +61,13 @@
         </div>
         <div id="notifications">
             {% for notification in notifications %}
-                <p class="notification-item">{{ notification.EventDate }}: {{ notification.Body }}</p>
+                <div class="item-container">
+                    <p class="notification-item">{{ notification.EventDate }}: {{ notification.Body }}
+                        {% if is_mod %}
+                            <button class="delete-btn" data-id="{{notification.NotifId}}" name="Notifications">Delete</button>
+                        {% endif %}
+                    </p>
+                </div>
             {% else %}
                 <p>Notification Bar</p>
             {% endfor %}

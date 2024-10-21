@@ -158,11 +158,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const selectedProviders = Array.from(mailingListForm.elements['providers'])
             .filter(checkbox => checkbox.checked)
-            .reduce((obj, checkbox) => {
+            .map(checkbox => {
                 const email = checkbox.value;
-                obj[email] = { name: checkbox.nextElementSibling.textContent };
-                return obj;
-            }, {});
+                const name = checkbox.nextElementSibling.textContent;
+        
+                return {
+                    Name: name.split(' (')[0],
+                    Email: email,
+                    Appointments: []  // Initialize as empty, will be populated by the backend
+                };
+            });
 
         if (Object.keys(selectedProviders).length === 0) {
             alert('Please select at least one provider.');
@@ -170,15 +175,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            await fetch('/send_emails', {
+            const response = await fetch('/report-generator/forty-eight-hour-warning/send-emails', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ selected_providers: selectedProviders }),
             });
+            console.log('Selected Providers: ', selectedProviders)
 
-            alert('Emails sent successfully!');
+            if (response.ok) {
+                alert('Emails sent successfully!');
+            } else {
+                console.error('Failed to send emails:', response.statusText);
+            }
         } catch (error) {
             console.error('Error sending emails:', error);
         }

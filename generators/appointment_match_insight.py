@@ -9,7 +9,7 @@ import os
 def generate_appointment_insight_report(range_start, range_end):
     try:
         user_name = os.getlogin()
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB"
+        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
         range_start_dt = pd.to_datetime(range_start)
         range_end_dt = pd.to_datetime(range_end)
@@ -17,16 +17,17 @@ def generate_appointment_insight_report(range_start, range_end):
         range_end_101 = datetime.strptime(range_end, '%Y-%m-%d')
         
         appointment_match_query = f"""
-            SELECT *
-            FROM Appointment_Match_Insight
+            SELECT DISTINCT *
+            FROM InsightSessionComparison
             WHERE CONVERT(DATE, Date, 101) BETWEEN '{range_start_101}' AND '{range_end_101}'
         """
         appointment_match_data = pd.read_sql_query(appointment_match_query, engine)
-    
+
+        appointment_match_data.drop_duplicates(inplace=True)
 
         output_file = io.BytesIO()
         appointment_match_data.to_excel(output_file, index=False)
-        output_file.seek(0)  # Reset the file pointer to the beginning of the BytesIO object
+        output_file.seek(0)
         return output_file
 
     except Exception as e:

@@ -32,7 +32,7 @@ def generate_late_conversions_report(app_start, app_end, converted_after):
                 PayForMileage,
                 TotalPay
             FROM Conversions_New
-            WHERE AppStart >= '{app_start}' AND AppEnd <= '{app_end}' AND ConvertedDT >= '{converted_after}'
+            WHERE AppStart >= '{app_start}' AND AppEnd <= DATEADD(day, 1, '{app_end}') AND ConvertedDT >= '{converted_after}'
         """
         data = pd.read_sql_query(query, engine)
 

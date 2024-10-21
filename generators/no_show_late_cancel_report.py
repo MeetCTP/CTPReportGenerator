@@ -89,7 +89,7 @@ def generate_no_show_late_cancel_report(app_start, app_end, provider, client, sc
 
         output_file = io.BytesIO()
         report_data.to_excel(output_file, index=False)
-        output_file.seek(0)  # Reset the file pointer to the beginning of the BytesIO object
+        output_file.seek(0)
         return output_file
 
     except Exception as e:
