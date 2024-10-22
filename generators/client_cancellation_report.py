@@ -23,7 +23,7 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
         past_range_end = prev_range_start - timedelta(days=1)
         prev_range_end = curr_range_start - timedelta(days=1)
         query_past_month = f"""
-            SELECT * FROM ClientCancellationView
+            SELECT DISTINCT * FROM ClientCancellationView
             WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start.strftime('%Y-%m-%d')}' AND '{past_range_end.strftime('%Y-%m-%d')}') 
             AND (CancelledReason IN ({', '.join([f"'{s}'" for s in cancel_reasons])}))
         """
@@ -35,7 +35,7 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
 
         # Query for the previous month data
         query_prev_month = f"""
-            SELECT * FROM ClientCancellationView
+            SELECT DISTINCT * FROM ClientCancellationView
             WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{prev_range_start.strftime('%Y-%m-%d')}' AND '{prev_range_end.strftime('%Y-%m-%d')}') 
             AND (CancelledReason IN ({', '.join([f"'{s}'" for s in cancel_reasons])}))
         """
@@ -47,7 +47,7 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
 
         # Query for the current month data
         query_curr_month = f"""
-            SELECT * FROM ClientCancellationView
+            SELECT DISTINCT * FROM ClientCancellationView
             WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{curr_range_start.strftime('%Y-%m-%d')}' AND '{curr_range_end.strftime('%Y-%m-%d')}') 
             AND (CancelledReason IN ({', '.join([f"'{s}'" for s in cancel_reasons])}))
         """
@@ -59,19 +59,19 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
 
         all_past_query = f"""
             SELECT * from ClientCancellationView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start.strftime('%Y-%m-%d')}' AND '{past_range_end.strftime('%Y-%m-%d')}')
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start.strftime('%Y-%m-%d')}' AND '{past_range_end.strftime('%Y-%m-%d')}') AND 
             ORDER BY Client, AppStart;
         """
 
         all_prev_query = f"""
             SELECT * from ClientCancellationView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{prev_range_start.strftime('%Y-%m-%d')}' AND '{prev_range_end.strftime('%Y-%m-%d')}')
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{prev_range_start.strftime('%Y-%m-%d')}' AND '{prev_range_end.strftime('%Y-%m-%d')}') AND 
             ORDER BY Client, AppStart;
         """
 
         all_curr_query = f"""
             SELECT * from ClientCancellationView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{curr_range_start.strftime('%Y-%m-%d')}' AND '{curr_range_end.strftime('%Y-%m-%d')}')
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{curr_range_start.strftime('%Y-%m-%d')}' AND '{curr_range_end.strftime('%Y-%m-%d')}') AND 
             ORDER BY Client, AppStart;
         """
 
@@ -105,6 +105,8 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
         
         combined_data['ThreeCancels_CurrentMonth'] = combined_data['Client'].map(three_cancels_curr)
         combined_data['CancellationPercentage_CurrentMonth'] = combined_data['Client'].map(cancel_percentage_curr)
+
+        combined_data.drop_duplicates(inplace=True)
 
         # Output the final data to an Excel file
         output_file = io.BytesIO()
