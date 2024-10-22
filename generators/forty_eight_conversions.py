@@ -136,10 +136,11 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
 #Email function
 
 def reminder_email(selected_providers, warning_list, non_payment_list):
+    SECRET = ''
     # OAuth2 setup
     client_id = '4900abdd-dfe5-4297-8a0a-fd9ac2cee73a'
     tenant_id = '91d63f97-21f4-43a6-945e-afd92bb2695f'
-    client_secret = '.fv8Q~KJuqoqikEHIOnmv6UBSkHPA2EVWjXxLcsK'
+    client_secret = SECRET
 
     authority = f"https://login.microsoftonline.com/{tenant_id}"
     scope = ["https://outlook.office365.com/.default"]
