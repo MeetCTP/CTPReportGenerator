@@ -31,7 +31,6 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
             query_past_month += f" AND Provider = '{provider}'"
         if client:
             query_past_month += f" AND Client = '{client}'"
-        query_past_month += " ORDER BY Client, AppStart;"
 
         # Query for the previous month data
         query_prev_month = f"""
@@ -43,7 +42,6 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
             query_prev_month += f" AND Provider = '{provider}'"
         if client:
             query_prev_month += f" AND Client = '{client}'"
-        query_prev_month += " ORDER BY Client, AppStart;"
 
         # Query for the current month data
         query_curr_month = f"""
@@ -55,24 +53,20 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
             query_curr_month += f" AND Provider = '{provider}'"
         if client:
             query_curr_month += f" AND Client = '{client}'"
-        query_curr_month += " ORDER BY Client, AppStart;"
 
         all_past_query = f"""
             SELECT * from ClientCancellationView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start.strftime('%Y-%m-%d')}' AND '{past_range_end.strftime('%Y-%m-%d')}') AND 
-            ORDER BY Client, AppStart;
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{past_range_start.strftime('%Y-%m-%d')}' AND '{past_range_end.strftime('%Y-%m-%d')}');
         """
 
         all_prev_query = f"""
             SELECT * from ClientCancellationView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{prev_range_start.strftime('%Y-%m-%d')}' AND '{prev_range_end.strftime('%Y-%m-%d')}') AND 
-            ORDER BY Client, AppStart;
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{prev_range_start.strftime('%Y-%m-%d')}' AND '{prev_range_end.strftime('%Y-%m-%d')}');
         """
 
         all_curr_query = f"""
             SELECT * from ClientCancellationView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{curr_range_start.strftime('%Y-%m-%d')}' AND '{curr_range_end.strftime('%Y-%m-%d')}') AND 
-            ORDER BY Client, AppStart;
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{curr_range_start.strftime('%Y-%m-%d')}' AND '{curr_range_end.strftime('%Y-%m-%d')}');
         """
 
         # Fetch data for each period
@@ -107,6 +101,7 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
         combined_data['CancellationPercentage_CurrentMonth'] = combined_data['Client'].map(cancel_percentage_curr)
 
         combined_data.drop_duplicates(inplace=True)
+        combined_data.sort_values(by=['Client', 'AppStart'])
 
         # Output the final data to an Excel file
         output_file = io.BytesIO()
