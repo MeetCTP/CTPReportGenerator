@@ -101,7 +101,8 @@ def generate_client_cancel_report(provider, client, cancel_reasons, range_start)
         combined_data['CancellationPercentage_CurrentMonth'] = combined_data['Client'].map(cancel_percentage_curr)
 
         combined_data.drop_duplicates(inplace=True)
-        combined_data.sort_values(by=['Client', 'AppStart'])
+        combined_data.sort_values(by=['Client', 'AppStart'], ascending=[True, True])
+        combined_data['AppStart'] = combined_data['AppStart'].dt.strftime('%m/%d/%Y %I:%M %p')
 
         # Output the final data to an Excel file
         output_file = io.BytesIO()
