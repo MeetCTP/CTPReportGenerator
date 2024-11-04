@@ -1,16 +1,13 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Get form and button elements
     const form = document.getElementById('report-form');
     const generateButton = document.getElementById('generate');
 
-    // Set up event listener for the generate report button
     generateButton.addEventListener('click', function () {
-        // Get the form values
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         const provider = document.getElementById('provider').value;
 
-        // Validate form data
+        // Validate that all fields are filled
         if (!startDate || !endDate || !provider) {
             alert('Please fill in all fields');
             return;
@@ -22,37 +19,39 @@ document.addEventListener('DOMContentLoaded', function () {
             end_date: endDate,
             provider: provider
         };
+        console.log('JSON Data:', formData);
 
-        // Send the form data to the backend
-        fetch('/report-generator/clinical-util-tracker/generate-report', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        })
-        .then(response => {
-            if (response.ok) {
-                return response.blob(); // Get the file as a blob
-            } else {
-                return response.json().then(errData => {
-                    throw new Error(errData.error || 'Error generating the report');
-                });
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/report-generator/clinical-util-tracker/generate-report', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.responseType = 'blob';
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    // Handle successful response with file download
+                    var blob = new Blob([xhr.response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Clinical_Util_Tracker_${provider}_${startDate}_${endDate}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    // Handle error response
+                    var reader = new FileReader();
+                    reader.onload = function () {
+                        var errorMessage = JSON.parse(reader.result).error || 'Error generating the report';
+                        alert(`Failed to generate report: ${errorMessage}`);
+                    };
+                    reader.readAsText(xhr.response);
+                }
             }
-        })
-        .then(blob => {
-            // Create a link to download the file
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Clinical_Util_Tracker_${provider}_${startDate}_${endDate}.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url); // Clean up the object URL
-            document.body.removeChild(a);
-        })
-        .catch(error => {
-            alert(`Failed to generate report: ${error.message}`);
-        });
+        };
+
+        // Send the request
+        xhr.send(JSON.stringify(formData));
     });
 });

@@ -1,27 +1,19 @@
-document.addEventListener('DOMContentLoaded', function () {
-    // Add event listener to the "Generate Report" button
+document.addEventListener('DOMContentLoaded', function() {
     var generateButton = document.getElementById('generate');
-    
-    // Attach the generateReport function to the button click event
-    generateButton.addEventListener('click', generateReport);
-    
-    function generateReport() {
-        var form = document.getElementById('report-form');
-        var formData = new FormData(form);
-
-        var app_start = formData.get('app-start');
-        var app_end = formData.get('app-end');
-        var converted_after = formData.get('converted-after');
-
-        var jsonData = JSON.stringify({
-            app_start: app_start,
-            app_end: app_end,
-            converted_after: converted_after
+    if (generateButton) {
+        generateButton.addEventListener('click', function() {
+            generateReport();
         });
+    }
+
+    function generateReport() {
+        var timeFrame = document.getElementById('timeframe').value;
+
+        var jsonData = JSON.stringify({ timeframe: timeFrame });
         console.log('JSON Data:', jsonData);
 
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', '/report-generator/late-conversions/generate-report', true);
+        xhr.open('POST', '/report-generator/certification-expiration/generate-report', true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.responseType = 'blob';
 
@@ -32,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     var url = window.URL.createObjectURL(blob);
                     var a = document.createElement('a');
                     a.href = url;
-                    a.download = 'Late_Conversions_Report.xlsx';
+                    a.download = 'Certification-Expiration.xlsx';
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);

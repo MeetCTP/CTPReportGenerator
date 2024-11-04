@@ -10,7 +10,7 @@ def generate_no_show_late_cancel_report(app_start, app_end, provider, client, sc
     try:
         user_name = os.getlogin()
         documents_path = f"C:/Users/{user_name}/Documents/"
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB"
+        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
         app_start_dt = pd.to_datetime(app_start)
         app_end_dt = pd.to_datetime(app_end)
@@ -34,7 +34,7 @@ def generate_no_show_late_cancel_report(app_start, app_end, provider, client, sc
                 Mileage,
                 Status,
                 CancellationReason
-            FROM ProviderSessions_New
+            FROM LateCancelNoShowView
             WHERE Status = 'Cancelled'
                 AND (CancellationReason = 'No Show'
                 OR CancellationReason LIKE '%Late Cancel%')
@@ -58,7 +58,7 @@ def generate_no_show_late_cancel_report(app_start, app_end, provider, client, sc
                 SchedulingChangeNote,
                 SchedulingCancelledReason,
                 SchedulingSegmentStartDateTime
-            FROM Scheduling_Raw_New
+            FROM Scheduling
             WHERE (SchedulingCancelledReason = 'No Show'
                 OR SchedulingCancelledReason LIKE '%Late Cancel%')
                 AND SchedulingSegmentStartDateTime BETWEEN '{app_start_dt}' AND '{app_end_dt}'

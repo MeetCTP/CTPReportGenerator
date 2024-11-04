@@ -14,6 +14,7 @@ from generators.forty_eight_conversions import generate_unconverted_time_report
 from generators.forty_eight_conversions import reminder_email
 from generators.client_cancellation_report import generate_client_cancel_report
 from generators.util_tracker import generate_util_tracker
+from generators.certification_expiration import generate_cert_exp_report
 from flask_cors import CORS
 from datetime import datetime
 from io import BytesIO
@@ -338,6 +339,10 @@ def client_cancellations():
 def clinical_util():
     return render_template('clinical-util.html')
 
+@app.route('/report-generator/certification-expiration')
+def certification_expiration():
+    return render_template('certification-expiration.html')
+
 @app.route('/report-generator/agora-match/generate-report', methods=['POST'])
 def generate_report():
     """Generates the Agora Match report."""
@@ -616,5 +621,23 @@ def handle_generate_clinical_util_report():
             )
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
+
+@app.route('/report-generator/certification-expiration/generate-report', methods=["POST"])
+def handle_generate_cert_exp_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        timeframe = data.get('timeframe')
+
+        try:
+            report_file = generate_cert_exp_report(timeframe)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=f"Certification_Expiration.xlsx"
+            )
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415
