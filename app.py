@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_file, redirect,
 from sqlalchemy import create_engine, text
 import msal
 import pandas as pd
+import openpyxl
 from flask_talisman import Talisman
 from generators.appointment_match_agora import generate_appointment_agora_report
 from generators.appointment_match_insight import generate_appointment_insight_report
@@ -15,6 +16,7 @@ from generators.forty_eight_conversions import reminder_email
 from generators.client_cancellation_report import generate_client_cancel_report
 from generators.util_tracker import generate_util_tracker
 from generators.certification_expiration import generate_cert_exp_report
+from generators.code_look_up import code_search
 from flask_cors import CORS
 from datetime import datetime
 from io import BytesIO
@@ -131,9 +133,9 @@ def handle_delete_homepage_item(table, id):
 
 # Define a function to fetch data from the database
 def fetch_data():
-    news_query = text("SELECT NewsId, Title, Body FROM dbo.News_Posts")
-    notifications_query = text("SELECT NotifId, EventDate, Body FROM dbo.Notifications")
-    weekly_qa_query = text("SELECT QAId, Body FROM dbo.WeeklyQA")
+    news_query = text("SELECT NewsId, Title, Body, RowModifiedAt FROM dbo.News_Posts ORDER BY RowModifiedAt DESC")
+    notifications_query = text("SELECT NotifId, EventDate, Body FROM dbo.Notifications ORDER BY RowModifiedAt DESC")
+    weekly_qa_query = text("SELECT QAId, Body FROM dbo.WeeklyQA ORDER BY RowModifiedAt DESC")
     responses_query = text("""
         SELECT QuestionId, ResponseBody, CreatedBy, CreatedAt
         FROM dbo.QAResponseView
@@ -145,9 +147,6 @@ def fetch_data():
         weekly_qas = connection.execute(weekly_qa_query).fetchall()
         responses = connection.execute(responses_query).fetchall()
 
-    notifications.reverse()
-    weekly_qas.reverse()
-    news_articles.reverse()
     #datetime.strftime(notifications.EventDate, '%m/%d/%Y')
 
     # Create a dictionary to map QAId to their responses
@@ -162,6 +161,17 @@ def fetch_data():
             })
 
     return news_articles, notifications, list(qa_dict.values())
+
+def search_table(sheet, query):
+        results = []
+
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            code_name, desc, role, session_type, service_type, interaction, *details = row
+            
+            if (code_name and query in str(code_name).lower()) or (desc and query in str(desc).lower()):
+                results.append(row)
+        
+        return results
 
 @app.route('/test-user')
 def test_user():
@@ -183,6 +193,28 @@ def home():
                            notifications=notifications, 
                            weekly_qas=weekly_qas,
                            is_mod=is_mod)
+
+@app.route('/submit-search', methods=['POST'])
+def search_service_codes():
+    try:
+        data = request.get_json()
+        look_up = data.get('query', '').strip().lower()
+
+        path = os.path.join('static', 'servicecodetable.xlsx')
+        if not os.path.exists(path):
+            return jsonify({'error': 'File not found.'}), 500
+
+        workbook = openpyxl.load_workbook(path)
+        sheet = workbook.active
+
+        search_results = search_table(sheet, look_up)
+
+        if search_results:
+            return jsonify({'results': search_results})
+        else:
+            return jsonify({'message': 'No matches found.', 'results': []}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/submit-response', methods=['POST'])
 def submit_response():
@@ -628,10 +660,12 @@ def handle_generate_clinical_util_report():
 def handle_generate_cert_exp_report():
     if request.headers['Content-Type'] == 'application/json':
         data = request.get_json()
+        status = data.get('status')
         timeframe = data.get('timeframe')
+        provider = data.get('provider')
 
         try:
-            report_file = generate_cert_exp_report(timeframe)
+            report_file = generate_cert_exp_report(status, timeframe, provider)
             return send_file(
                 report_file,
                 as_attachment=True,

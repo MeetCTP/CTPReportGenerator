@@ -72,6 +72,7 @@ input {
 input, select, textarea {
     border-radius: 5px;
     background-color: #bbb;
+    margin: 5px;
 }
 
 /*
@@ -228,6 +229,11 @@ main {
     margin-bottom: 1rem;
 }
 
+.news-time {
+    font-size: 0.8rem;
+    color: #000;
+}
+
 .notification-item {
     margin-bottom: 1.5rem;
     border: 2px solid #bbb;
@@ -290,7 +296,7 @@ main {
     cursor: pointer;
 }
 
-.delete-btn {
+.delete-btn, #search {
     width: 4rem;
     background-color: #444;
     color: #fff;
@@ -301,6 +307,30 @@ main {
 
 .client-cancel-date {
     margin-bottom: 1rem;
+}
+
+.result-item {
+    font-size: 1rem;
+    border: 1px solid #777;
+}
+
+#search {
+    margin-bottom: 10px;
+}
+
+#search-label, #notif-label {
+    font-size: 1.5rem;
+    border: 2px solid #333;
+    border-radius: 10px;
+    padding: 3px;
+    margin: 5px;
+}
+
+#results {
+    max-height: 10rem;
+    border: 1px solid #000;
+    border-radius: 10px;
+    overflow: auto;
 }
 
 #logo {
@@ -401,4 +431,8 @@ main {
 
 #headspace {
     width: 11.4375rem;
+}
+
+#query {
+    width: 80%;
 }

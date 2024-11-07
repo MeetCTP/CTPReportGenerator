@@ -7,9 +7,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function generateReport() {
-        var timeFrame = document.getElementById('timeframe').value;
+        var form = document.getElementById('report-form');
+        var formData = new FormData(form);
 
-        var jsonData = JSON.stringify({ timeframe: timeFrame });
+        var status = formData.get('status');
+        var timeframe = formData.get('timeframe');
+        var provider = formData.get('provider');
+
+        var jsonData = JSON.stringify({
+            status: status,
+            timeframe: timeframe,
+            provider: provider
+        });
         console.log('JSON Data:', jsonData);
 
         var xhr = new XMLHttpRequest();

@@ -27,7 +27,7 @@
                                 <button class="delete-btn" data-id="{{article.NewsId}}" name="News_Posts">Delete</button>
                             {% endif %}
                         </h2>
-                        <p class="news-body">{{ article.Body }}</p>
+                        <p class="news-body">{{ article.Body }}<span class="news-time">{{ article.RowModifiedAt }}</span></p>
                     </div>
                 {% else %}
                     <p class="news-body">Put some News here.</p>
@@ -60,6 +60,13 @@
             </div>
         </div>
         <div id="notifications">
+            <div id="code-search">
+                <label id="search-label">Service Code Quick Look-Up</label>
+                <input id="query" name="search" placeholder="Search Codes">
+                <button id="search">Search</button>
+            </div>
+            <div id="results"></div>
+            <label id="notif-label">Notifications</label>
             {% for notification in notifications %}
                 <div class="item-container">
                     <p class="notification-item">{{ notification.EventDate }}: {{ notification.Body }}

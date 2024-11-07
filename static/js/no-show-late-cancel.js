@@ -24,7 +24,6 @@ function generateReport() {
         client: client,
         school: school
     });
-    console.log('JSON Data:', jsonData);
 
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/report-generator/no-show-late-cancel/generate-report', true);

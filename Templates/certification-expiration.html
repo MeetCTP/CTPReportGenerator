@@ -16,14 +16,28 @@
         </nav>
         <div>
             <form id="report-form">
+                <label>Status:</label>
+                <div class="active-row">
+                    <input class="checkboxes" type="checkbox" id="active" name="status" value="1">
+                    <label for="active">Active</label>
+                    <input class="checkboxes" type="checkbox" id="inactive" name="status" value="0">
+                    <label for="inactive">Inactive</label>
+                </div>
+                
                 <label for="timeframe">Expiration Timeframe</label>
-                <select id="timeframe" name="timeframe" placeholder="-Select-" required>
+                <select id="timeframe" name="timeframe" required>
                     <option value="30">30 Days</option>
                     <option value="60">60 Days</option>
                     <option value="90">90 Days</option>
                     <option value="180">6 Months</option>
                     <option value="365">1 Year</option>
                 </select>
+                
+                <div>
+                    <label for="provider">Provider Name:</label>
+                    <input type="text" id="provider" name="provider">
+                </div>
+
                 <button id="generate" type="button">Generate Report</button>
             </form>
         </div>

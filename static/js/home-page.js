@@ -62,3 +62,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    var searchButton = document.getElementById('search');
+    if (searchButton) {
+        searchButton.addEventListener('click', function() {
+            serciveCodeSearch();
+        });
+    }
+});
+
+function serciveCodeSearch() {
+    var query = document.getElementById('query').value;
+
+    fetch('/submit-search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            query: query
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        var resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = '';
+
+        if (data.results && data.results.length > 0) {
+            data.results.forEach(result => {
+                var resultItem = document.createElement('div');
+                resultItem.classList.add('result-item');
+                resultItem.innerHTML = `
+                    <p style="font-size: 1rem;"><strong>Code:</strong> ${result[0]}</p>
+                    <pstyle="font-size: 1rem;"><strong>Description:</strong> ${result[1]}</p>
+                `;
+                resultsContainer.appendChild(resultItem);
+            });
+        } else {
+            var noResultsMessage = document.createElement('p');
+            noResultsMessage.textContent = data.message || 'No results found.';
+            resultsContainer.appendChild(noResultsMessage);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        var resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = '<p>An error occurred while fetching results.</p>';
+    });
+}
