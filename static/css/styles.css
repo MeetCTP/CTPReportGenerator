@@ -314,6 +314,27 @@ main {
     border: 1px solid #777;
 }
 
+.notif-search {
+    position: relative;
+    top: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    background-color: #0f1024;
+    border-radius: 10px;
+    width: 30%;
+    height: 100%;
+    float: right;
+    z-index: 5;
+    flex: 4;
+}
+
+.code-search-section {
+    background-color: #4747e2;
+}
+
 #search {
     margin-bottom: 10px;
 }
@@ -354,11 +375,8 @@ main {
     background-color: #4747e2;
     border: 1px solid #000;
     border-radius: 10px;
-    width: 30%;
-    height: 100%;
-    float: right;
     z-index: 5;
-    flex: 4;
+    max-height: 60rem;
 }
 
 #weekly-news {

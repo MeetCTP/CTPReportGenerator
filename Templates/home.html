@@ -59,25 +59,29 @@
                 {% endfor %}
             </div>
         </div>
-        <div id="notifications">
-            <div id="code-search">
-                <label id="search-label">Service Code Quick Look-Up</label>
-                <input id="query" name="search" placeholder="Search Codes">
-                <button id="search">Search</button>
-            </div>
-            <div id="results"></div>
-            <label id="notif-label">Notifications</label>
-            {% for notification in notifications %}
-                <div class="item-container">
-                    <p class="notification-item">{{ notification.EventDate }}: {{ notification.Body }}
-                        {% if is_mod %}
-                            <button class="delete-btn" data-id="{{notification.NotifId}}" name="Notifications">Delete</button>
-                        {% endif %}
-                    </p>
+        <div class="notif-search">
+            <div class="code-search-section">
+                <div id="code-search">
+                    <label id="search-label">Service Code Quick Look-Up</label>
+                    <input id="query" name="search" placeholder="Search Codes">
+                    <button id="search">Search</button>
                 </div>
-            {% else %}
-                <p>Notification Bar</p>
-            {% endfor %}
+                <div id="results"></div>
+            </div>
+            <div id="notifications">
+                <label id="notif-label">Notifications</label>
+                {% for notification in notifications %}
+                    <div class="item-container">
+                        <p class="notification-item">{{ notification.EventDate }}: {{ notification.Body }}
+                            {% if is_mod %}
+                                <button class="delete-btn" data-id="{{notification.NotifId}}" name="Notifications">Delete</button>
+                            {% endif %}
+                        </p>
+                    </div>
+                {% else %}
+                    <p>Notification Bar</p>
+                {% endfor %}
+            </div>
         </div>
     </section>
     <script src="{{ url_for('static', filename='js/home-page.js') }}"></script>

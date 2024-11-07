@@ -66,7 +66,7 @@ olivia = f"Olivia.a.DiPasquale"
 megan = f"Megan.Leighton"
 
 #Groups
-admin_group = [lisa, admin, cari]
+admin_group = [lisa, admin, cari, amy]
 recruiting_group = [amy, stacey]
 clinical_group = [megan, jesse]
 accounting_group = [eileen, greg, cari]

@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     var url = window.URL.createObjectURL(blob);
                     var a = document.createElement('a');
                     a.href = url;
-                    a.download = 'Insight_Appointment_Match_Report.xlsx';
+                    a.download = 'Insight_Sessions_Report.xlsx';
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);

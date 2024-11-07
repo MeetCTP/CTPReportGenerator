@@ -24,6 +24,7 @@ def generate_appointment_insight_report(range_start, range_end):
         appointment_match_data = pd.read_sql_query(appointment_match_query, engine)
 
         appointment_match_data.drop_duplicates(inplace=True)
+        appointment_match_data.drop('School', axis=1, inplace=True)
 
         output_file = io.BytesIO()
         appointment_match_data.to_excel(output_file, index=False)
