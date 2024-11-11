@@ -20,13 +20,14 @@
     <section class="mod-container container-blk">
         <h3>Add News</h3>
         <div>
-            <form class="set-forms" id="news-form">
+            <form class="set-forms" id="news-form" enctype="multipart/form-data">
                 <input type="hidden" name="form_type" value="news">
                 <label>Title: </label>
                 <input type="text" id="title" name="Title">
                 <label>Body: </label>
                 <textarea name="Body" id="news-body" cols="40" rows="5"></textarea>
-                <label>Image Attachment NOT available yet.</label>
+                <label>Image</label>
+                <input type="file" id="image" name="filename">
                 <button type="button" onclick="submitForm('news-form')">Submit</button>
             </form>
         </div>

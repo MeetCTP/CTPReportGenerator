@@ -111,3 +111,78 @@ function serciveCodeSearch() {
         resultsContainer.innerHTML = '<p>An error occurred while fetching results.</p>';
     });
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+    const modal = document.getElementById("imageModal");
+    const modalImg = document.getElementById("modalImage");
+    const closeModalButton = document.getElementById("closeModal");
+    const zoomInButton = document.getElementById("zoomIn");
+    const zoomOutButton = document.getElementById("zoomOut");
+    let zoomLevel = 1;
+    let isDragging = false;
+    let startX, startY, imgPosX = 0, imgPosY = 0;
+
+    function openModal(imageSrc) {
+        modal.style.display = "block";
+        modalImg.src = imageSrc;
+        zoomLevel = 1;
+        imgPosX = 0;
+        imgPosY = 0;
+        modalImg.style.transform = `scale(${zoomLevel}) translate(0px, 0px)`;
+    }
+
+    function closeModal() {
+        modal.style.display = "none";
+    }
+
+    function zoomIn() {
+        zoomLevel += 0.2;
+        updateTransform();
+    }
+
+    function zoomOut() {
+        if (zoomLevel > 0.4) {
+            zoomLevel -= 0.2;
+            updateTransform();
+        }
+    }
+
+    function updateTransform() {
+        modalImg.style.transform = `scale(${zoomLevel}) translate(${imgPosX}px, ${imgPosY}px)`;
+    }
+
+    document.querySelectorAll(".news-image").forEach(image => {
+        image.addEventListener("click", () => openModal(image.src));
+    });
+
+    closeModalButton.addEventListener("click", closeModal);
+    modal.addEventListener("click", function(event) {
+        if (event.target === modal) closeModal();
+    });
+
+    zoomInButton.addEventListener("click", zoomIn);
+    zoomOutButton.addEventListener("click", zoomOut);
+
+    modalImg.addEventListener("mousedown", (event) => {
+        if (zoomLevel > 1) {
+            isDragging = true;
+            startX = event.clientX - imgPosX;
+            startY = event.clientY - imgPosY;
+            modalImg.style.cursor = "grab";
+            event.preventDefault();
+        }
+    });
+
+    document.addEventListener("mousemove", (event) => {
+        if (isDragging) {
+            imgPosX = event.clientX - startX;
+            imgPosY = event.clientY - startY;
+            updateTransform();
+        }
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        modalImg.style.cursor = "default";
+    });
+});

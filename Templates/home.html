@@ -24,18 +24,33 @@
                     <div class="item-container">
                         <h2 class="news-title">{{ article.Title }}
                             {% if is_mod %}
-                                <button class="delete-btn" data-id="{{article.NewsId}}" name="News_Posts">Delete</button>
+                                <button class="delete-btn" data-id="{{ article.NewsId }}" name="News_Posts">Delete</button>
                             {% endif %}
                         </h2>
                         <p class="news-body">{{ article.Body }}<span class="news-time">{{ article.RowModifiedAt }}</span></p>
+                        {% if article.ImageBase64 %}
+                            <img src="data:image/png;base64,{{ article.ImageBase64 }}" alt="News Image" class="news-image">
+                        {% endif %}
                     </div>
                 {% else %}
                     <p class="news-body">Put some News here.</p>
                 {% endfor %}
             </div>
+            
+            <div id="imageModal" class="modal">
+                <div class="top-bar">
+                    <span id="closeModal" class="close">&times;</span>
+                    <div class="zoom-controls">
+                        <button id="zoomIn">+</button>
+                        <button id="zoomOut">-</button>
+                    </div>
+                </div>
+                <img class="modal-content" id="modalImage">
+            </div>
+
             <div id="weekly">
                 {% for qa in weekly_qas %}
-                    <div class="item-container">
+                    <div class="item-container-other">
                         <div class="qa-item">
                             <p class="question">{{ qa.Body }}
                                 {% if is_mod %}
@@ -71,7 +86,7 @@
             <div id="notifications">
                 <label id="notif-label">Notifications</label>
                 {% for notification in notifications %}
-                    <div class="item-container">
+                    <div class="item-container-other">
                         <p class="notification-item">{{ notification.EventDate }}: {{ notification.Body }}
                             {% if is_mod %}
                                 <button class="delete-btn" data-id="{{notification.NotifId}}" name="Notifications">Delete</button>

@@ -22,6 +22,7 @@ from datetime import datetime
 from io import BytesIO
 from logging.handlers import RotatingFileHandler
 import datetime as dt
+import base64
 import json
 import urllib.parse
 import logging
@@ -39,6 +40,7 @@ csp = {
 
 app = Flask(__name__)
 CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
 #Talisman(app, content_security_policy=csp, force_https=True)
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
@@ -79,9 +81,9 @@ site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy]
 def handle_submit_form_data(table, data):
     if table == 'News_Posts':
         query = text("""
-        INSERT INTO dbo.News_Posts (Title, Body, CreatedBy, RowModifiedAt) 
-        VALUES (:Title, :Body, :CreatedBy, :RowModifiedAt)
-        """)
+            INSERT INTO dbo.News_Posts (Title, Body, Attachment, CreatedBy, RowModifiedAt) 
+            VALUES (:Title, :Body, :Attachment, :CreatedBy, :RowModifiedAt)
+            """)
     elif table == 'Notifications':
         query = text("""
         INSERT INTO dbo.Notifications (EventDate, Body, CreatedBy, RowModifiedAt) 
@@ -103,7 +105,6 @@ def handle_submit_form_data(table, data):
     
 def handle_delete_homepage_item(table, id):
     try:
-        # Ensure the id is an integer
         id = int(id)
     except ValueError:
         print(f"Invalid id value: {id}")
@@ -131,9 +132,11 @@ def handle_delete_homepage_item(table, id):
     except Exception as e:
         return print(e)
 
-# Define a function to fetch data from the database
+def get_image_as_base64(image_data):
+    return base64.b64encode(image_data).decode('utf-8') if image_data else None
+
 def fetch_data():
-    news_query = text("SELECT NewsId, Title, Body, RowModifiedAt FROM dbo.News_Posts ORDER BY RowModifiedAt DESC")
+    news_query = text("SELECT NewsId, Title, Body, Attachment, RowModifiedAt FROM dbo.News_Posts ORDER BY RowModifiedAt DESC")
     notifications_query = text("SELECT NotifId, EventDate, Body FROM dbo.Notifications ORDER BY RowModifiedAt DESC")
     weekly_qa_query = text("SELECT QAId, Body FROM dbo.WeeklyQA ORDER BY RowModifiedAt DESC")
     responses_query = text("""
@@ -149,7 +152,17 @@ def fetch_data():
 
     #datetime.strftime(notifications.EventDate, '%m/%d/%Y')
 
-    # Create a dictionary to map QAId to their responses
+    news_articles = [
+        {
+            'NewsId': article.NewsId,
+            'Title': article.Title,
+            'Body': article.Body,
+            'ImageBase64': get_image_as_base64(article.Attachment),
+            'RowModifiedAt': article.RowModifiedAt
+        }
+        for article in news_articles
+    ]
+
     qa_dict = {qa.QAId: {'Id': qa.QAId, 'Body': qa.Body, 'responses': []} for qa in weekly_qas}
     
     for response in responses:
@@ -269,31 +282,35 @@ def site_mod_page():
 
 @app.route('/set/submit-form-data', methods=['POST'])
 def submit_form_data():
-    username = request.environ.get('REMOTE_USER')
-    username = str(username).split('\\')[-1]
-    form_data = request.form.to_dict()
-    form_type = form_data.pop('form_type', None)
-    
-    form_data.update({
-        'CreatedBy': username,
-        'RowModifiedAt': datetime.now()
-    })
+    try:
+        username = request.environ.get('REMOTE_USER')
+        username = str(username).split('\\')[-1]
+        form_data = request.form.to_dict()
+        form_type = form_data.pop('form_type', None)
 
-    if 'filename' in request.files:
-        file = request.files['filename']
-        file_data = file.read()
-        form_data['Attachment'] = file_data
-    else:
-        form_data['Attachment'] = None
+        form_data.update({
+            'CreatedBy': username,
+            'RowModifiedAt': datetime.now()
+        })
 
-    if form_type == 'news':
-        handle_submit_form_data('News_Posts', form_data)
-    elif form_type == 'notification':
-        handle_submit_form_data('Notifications', form_data)
-    elif form_type == 'qa':
-        handle_submit_form_data('WeeklyQA', form_data)
+        if 'filename' in request.files:
+            file = request.files['filename']
+            form_data['Attachment'] = file.read()
+        else:
+            form_data['Attachment'] = None
 
-    return jsonify({'message': 'Form submitted successfully'}), 200
+        if form_type == 'news':
+            handle_submit_form_data('News_Posts', form_data)
+        elif form_type == 'notification':
+            handle_submit_form_data('Notifications', form_data)
+        elif form_type == 'qa':
+            handle_submit_form_data('WeeklyQA', form_data)
+
+        return jsonify({'message': 'Form submitted successfully'}), 200
+
+    except Exception as e:
+        print(f"Error processing form submission: {e}")
+        return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
 
 @app.route('/report-generator')
 def reports():
