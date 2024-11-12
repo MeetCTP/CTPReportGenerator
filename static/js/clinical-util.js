@@ -7,13 +7,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const endDate = document.getElementById('end-date').value;
         const provider = document.getElementById('provider').value;
 
-        // Validate that all fields are filled
         if (!startDate || !endDate || !provider) {
             alert('Please fill in all fields');
             return;
         }
 
-        // Prepare the data to send in the POST request
         const formData = {
             start_date: startDate,
             end_date: endDate,
@@ -29,7 +27,6 @@ document.addEventListener('DOMContentLoaded', function () {
         xhr.onreadystatechange = function () {
             if (xhr.readyState === XMLHttpRequest.DONE) {
                 if (xhr.status === 200) {
-                    // Handle successful response with file download
                     var blob = new Blob([xhr.response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                     var url = window.URL.createObjectURL(blob);
                     var a = document.createElement('a');
@@ -40,7 +37,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
                 } else {
-                    // Handle error response
                     var reader = new FileReader();
                     reader.onload = function () {
                         var errorMessage = JSON.parse(reader.result).error || 'Error generating the report';

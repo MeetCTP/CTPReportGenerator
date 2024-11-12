@@ -68,9 +68,9 @@ olivia = f"Olivia.a.DiPasquale"
 megan = f"Megan.Leighton"
 
 #Groups
-admin_group = [lisa, admin, cari, amy]
+admin_group = [lisa, admin, cari, amy, megan]
 recruiting_group = [amy, stacey]
-clinical_group = [megan, jesse]
+clinical_group = []
 accounting_group = [eileen, greg, cari]
 student_services_group = [eileen, christi, olivia]
 human_resources_group = [aaron, linda]
@@ -123,6 +123,10 @@ def handle_delete_homepage_item(table, id):
         DELETE FROM dbo.WeeklyQAResponses WHERE QuestionId = :id;
         DELETE FROM dbo.WeeklyQA WHERE QAId = :id;
         """)
+    elif table == 'WeeklyQAResponses':
+        query = text("""
+        DELETE FROM dbo.WeeklyQAResponses WHERE Id = :id;
+        """)
 
     try:
         with engine.connect() as connection:
@@ -140,7 +144,7 @@ def fetch_data():
     notifications_query = text("SELECT NotifId, EventDate, Body FROM dbo.Notifications ORDER BY RowModifiedAt DESC")
     weekly_qa_query = text("SELECT QAId, Body FROM dbo.WeeklyQA ORDER BY RowModifiedAt DESC")
     responses_query = text("""
-        SELECT QuestionId, ResponseBody, CreatedBy, CreatedAt
+        SELECT ResponseId, QuestionId, ResponseBody, CreatedBy, CreatedAt
         FROM dbo.QAResponseView
     """)
 
@@ -168,6 +172,7 @@ def fetch_data():
     for response in responses:
         if response.QuestionId in qa_dict:
             qa_dict[response.QuestionId]['responses'].append({
+                'ResponseId': response.ResponseId,
                 'ResponseBody': response.ResponseBody,
                 'CreatedBy': response.CreatedBy,
                 'CreatedAt': datetime.strftime(response.CreatedAt, '%m/%d/%Y %I:%M%p')

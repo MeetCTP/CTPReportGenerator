@@ -40,10 +40,6 @@
             <div id="imageModal" class="modal">
                 <div class="top-bar">
                     <span id="closeModal" class="close">&times;</span>
-                    <div class="zoom-controls">
-                        <button id="zoomIn">+</button>
-                        <button id="zoomOut">-</button>
-                    </div>
                 </div>
                 <img class="modal-content" id="modalImage">
             </div>
@@ -59,7 +55,12 @@
                             </p>
                             <div class="responses">
                                 {% for response in qa.responses %}
-                                    <p class="response-item"><span class="response-body">{{ response.ResponseBody }}</span><br> - {{ response.CreatedBy }} at {{ response.CreatedAt }}</p>
+                                    <div class="response-item">
+                                        <p><span class="response-body">{{ response.ResponseBody }}</span><br> - {{ response.CreatedBy }} at {{ response.CreatedAt }}</p>
+                                        {% if is_mod %}
+                                            <button class="delete-btn" data-id="{{response.ResponseId}}" name="WeeklyQAResponses">Delete</button>
+                                        {% endif %}
+                                    </div>
                                     <br><br>
                                 {% endfor %}
                             </div>

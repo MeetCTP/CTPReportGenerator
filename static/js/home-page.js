@@ -52,11 +52,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (response.ok) {
                     if (tableName == 'Notifications') {
                         this.closest('.item-container-other').remove();
-                        alert('Item deleted successfully.');
+                    } else if (tableName == 'WeeklyQAResponses') {
+                        this.closest('.response-item').remove();
                     } else {
                         this.closest('.item-container').remove();
-                        alert('Item deleted successfully.')
                     }
+                    alert('Item deleted successfully.');
                 } else {
                     alert('Failed to delete the item.');
                 }
@@ -121,8 +122,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const modal = document.getElementById("imageModal");
     const modalImg = document.getElementById("modalImage");
     const closeModalButton = document.getElementById("closeModal");
-    const zoomInButton = document.getElementById("zoomIn");
-    const zoomOutButton = document.getElementById("zoomOut");
     let zoomLevel = 1;
     let isDragging = false;
     let startX, startY, imgPosX = 0, imgPosY = 0;
@@ -140,16 +139,15 @@ document.addEventListener("DOMContentLoaded", function() {
         modal.style.display = "none";
     }
 
-    function zoomIn() {
-        zoomLevel += 0.2;
-        updateTransform();
-    }
-
-    function zoomOut() {
-        if (zoomLevel > 0.4) {
-            zoomLevel -= 0.2;
-            updateTransform();
+    function zoom(event) {
+        const zoomStep = 0.1;
+        if (event.deltaY < 0) {
+            zoomLevel += zoomStep;
+        } else if (event.deltaY > 0 && zoomLevel > 0.4) {
+            zoomLevel -= zoomStep;
         }
+        updateTransform();
+        event.preventDefault();
     }
 
     function updateTransform() {
@@ -165,8 +163,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (event.target === modal) closeModal();
     });
 
-    zoomInButton.addEventListener("click", zoomIn);
-    zoomOutButton.addEventListener("click", zoomOut);
+    modalImg.addEventListener("wheel", zoom);
 
     modalImg.addEventListener("mousedown", (event) => {
         if (zoomLevel > 1) {

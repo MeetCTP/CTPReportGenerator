@@ -18,12 +18,9 @@ def generate_util_tracker(start_date, end_date, provider):
         query = f"""
             SELECT *
             FROM ClinicalUtilizationTracker
-            WHERE (Provider = '{provider}') AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND '{end_date}')
+            WHERE (Provider = '{provider}') AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))
         """
         data = pd.read_sql_query(query, engine)
-
-        data = data.sort_values(by='LastName', ascending=True)
-        data.drop_duplicates(inplace=True)
 
         indirect_categories = {
             'ProgressReports': ['Progress', 'Report'],
@@ -46,6 +43,15 @@ def generate_util_tracker(start_date, end_date, provider):
         data[['Category', 'Subcategory']] = data['ServiceCodeDescription'].apply(
             lambda desc: pd.Series(categorize_service(desc))
         )
+
+        data['CompletedPercentage'] = np.where(
+            data['AuthHours'] == 0, np.nan, (data['EventHours'] / data['AuthHours']) * 100
+        )
+
+        #if data['Subcategory'] == 'MakeUpTime'
+
+        data = data.sort_values(by='LastName', ascending=True)
+        data.drop_duplicates(inplace=True)
 
         output_file = io.BytesIO()
         data.to_excel(output_file, index=False)
