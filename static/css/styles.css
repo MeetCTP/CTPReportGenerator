@@ -230,7 +230,9 @@ main {
 
 .item-container-other {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     width: 100%;
 }
 
@@ -464,7 +466,22 @@ main {
     border: 1px solid #000;
     border-radius: 10px;
     z-index: 5;
-    max-height: 60rem;
+    max-height: 80rem;
+}
+
+#notifications::-webkit-scrollbar {
+    width: 12px;
+}
+
+#notifications::-webkit-scrollbar-track {
+    background: #41416d;
+    border-radius: 10px;
+}
+
+#notifications::-webkit-scrollbar-thumb {
+    background-color: #0c0c55;
+    border-radius: 10px;
+    border: 2px solid #999;
 }
 
 #weekly-news {
@@ -495,6 +512,21 @@ main {
     padding-top: 32px;
 }
 
+#news::-webkit-scrollbar {
+    width: 12px;
+}
+
+#news::-webkit-scrollbar-track {
+    background: #8b3030;
+    border-radius: 10px;
+}
+
+#news::-webkit-scrollbar-thumb {
+    background-color: #880909;
+    border-radius: 10px;
+    border: 2px solid #999;
+}
+
 #weekly {
     display: flex;
     flex-direction: column;
@@ -510,6 +542,22 @@ main {
     border-radius: 10px;
     box-shadow: 5px 10px #b4a801;
     z-index: 5;
+    max-height: 60rem;
+}
+
+#weekly::-webkit-scrollbar {
+    width: 12px;
+}
+
+#weekly::-webkit-scrollbar-track {
+    background: #928b2a;
+    border-radius: 10px;
+}
+
+#weekly::-webkit-scrollbar-thumb {
+    background-color: #635d0a;
+    border-radius: 10px;
+    border: 2px solid #999;
 }
 
 #report-form {

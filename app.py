@@ -120,8 +120,8 @@ def handle_delete_homepage_item(table, id):
         """)
     elif table == 'WeeklyQA':
         query = text("""
-        DELETE FROM dbo.WeeklyQA WHERE QAId = :id;
         DELETE FROM dbo.WeeklyQAResponses WHERE QuestionId = :id;
+        DELETE FROM dbo.WeeklyQA WHERE QAId = :id;
         """)
 
     try:

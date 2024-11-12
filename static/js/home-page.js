@@ -50,8 +50,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(JSON.stringify({ id: itemId, table: tableName}))
 
                 if (response.ok) {
-                    this.closest('.item-container').remove();
-                    alert('Item deleted successfully.');
+                    if (tableName == 'Notifications') {
+                        this.closest('.item-container-other').remove();
+                        alert('Item deleted successfully.');
+                    } else {
+                        this.closest('.item-container').remove();
+                        alert('Item deleted successfully.')
+                    }
                 } else {
                     alert('Failed to delete the item.');
                 }
