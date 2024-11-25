@@ -24,7 +24,8 @@ def generate_cert_exp_report(status, timeframe, provider):
                 DocumentExpirationDate,
                 ExpirationStatus,
                 EmployeeType,
-                Status
+                Status,
+                EmailAddress
             FROM CertificationExpiration
             WHERE (DocumentExpirationDate < '{target_date}') AND (Status IN ({', '.join([f"'{s}'" for s in status])}))
         """

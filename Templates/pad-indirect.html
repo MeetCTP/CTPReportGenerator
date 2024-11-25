@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PA Distance Indirect Time Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/pad-indirect.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>PA Distance Indirect Time Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <div>
+                    <label for="start-date">Start Date:</label>
+                    <input type="date" id="start-date" name="start_date" required>
+                </div>
+                <div>
+                    <label for="end-date">End Date:</label>
+                    <input type="date" id="end-date" name="end_date" required>
+                </div>
+                <button id="generate" type="button">Generate Report</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

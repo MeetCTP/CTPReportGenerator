@@ -15,7 +15,9 @@ from generators.forty_eight_conversions import generate_unconverted_time_report
 from generators.forty_eight_conversions import reminder_email
 from generators.client_cancellation_report import generate_client_cancel_report
 from generators.util_tracker import generate_util_tracker
+from generators.util_tracker import calculate_cancellation_percentage
 from generators.certification_expiration import generate_cert_exp_report
+from generators.pad_indirect_time_report import generate_pad_indirect
 from generators.code_look_up import code_search
 from flask_cors import CORS
 from datetime import datetime
@@ -23,6 +25,7 @@ from io import BytesIO
 from logging.handlers import RotatingFileHandler
 import datetime as dt
 import base64
+import pymssql
 import json
 import urllib.parse
 import logging
@@ -68,13 +71,12 @@ olivia = f"Olivia.a.DiPasquale"
 megan = f"Megan.Leighton"
 
 #Groups
-admin_group = [lisa, admin, cari, amy, megan]
+admin_group = [lisa, admin, dan]
 recruiting_group = [amy, stacey]
-clinical_group = []
+clinical_group = [megan]
 accounting_group = [eileen, greg, cari]
-student_services_group = [eileen, christi, olivia]
+student_services_group = [eileen, cari, christi, olivia]
 human_resources_group = [aaron, linda]
-it_group = [fabian, dan]
 testing_group = [josh, fabian]
 site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy]
 
@@ -325,16 +327,14 @@ def reports():
     if username in admin_group:
         return render_template('all-prod-reports.html')
     elif username in clinical_group:
-        return render_template('clinical-reports.html')
+        return render_template('all-prod-reports.html')
     elif username in student_services_group:
-        return render_template('student-services-reports.html')
+        return render_template('all-prod-reports.html')
     elif username in accounting_group:
-        return render_template('accounting-reports.html')
+        return render_template('all-prod-reports.html')
     elif username in human_resources_group:
-        return render_template('human-resources-reports.html')
+        return render_template('all-prod-reports.html')
     elif username in testing_group:
-        return render_template('all-reports.html')
-    elif username in it_group:
         return render_template('all-reports.html')
     else:
         return redirect(url_for('access_denied'))
@@ -396,6 +396,10 @@ def clinical_util():
 @app.route('/report-generator/certification-expiration')
 def certification_expiration():
     return render_template('certification-expiration.html')
+
+@app.route('/report-generator/pad-indirect')
+def pad_indirect():
+    return render_template('pad-indirect.html')
 
 @app.route('/report-generator/agora-match/generate-report', methods=['POST'])
 def generate_report():
@@ -692,6 +696,25 @@ def handle_generate_cert_exp_report():
                 report_file,
                 as_attachment=True,
                 download_name=f"Certification_Expiration.xlsx"
+            )
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
+
+@app.route('/report-generator/pad-indirect/generate-report', methods=["POST"])
+def handle_generate_pad_indirect_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        try:
+            report_file = generate_pad_indirect(start_date, end_date)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=f"PAD_Indirect_Time_Report_'{start_date}'-'{end_date}'.xlsx"
             )
         except Exception as e:
             return jsonify({'error': str(e)}), 500

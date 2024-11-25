@@ -38,6 +38,8 @@ def generate_late_conversions_report(app_start, app_end, converted_after):
 
         data.drop_duplicates(inplace=True)
 
+        data = data.sort_values(by='ConvertedDT', ascending=True)
+
         data['AppStart'] = data['AppStart'].dt.strftime('%m/%d/%Y %I:%M%p')
         data['AppEnd'] = data['AppEnd'].dt.strftime('%m/%d/%Y %I:%M%p')
         data['ConvertedDT'] = data['ConvertedDT'].dt.strftime('%m/%d/%Y %I:%M%p')

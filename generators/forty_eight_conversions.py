@@ -29,40 +29,31 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
         """
         data = pd.read_sql_query(query, engine)
 
-        # Convert relevant columns to datetime
         data['ServiceDate'] = pd.to_datetime(data['ServiceDate'])
         data['ConvertedDT'] = pd.to_datetime(data['ConvertedDT'])
         data['IsLate'] = (data['ConvertedDT'] - data['ServiceDate']).dt.days > 2
 
-        # Filter data
         data = data[(data['Status'] == 'Un-Converted') | (data['IsLate'])]
 
-        # Fetch existing data from WarnedProviders and ProviderNonPayment tables
         warning_list = pd.read_sql_query("SELECT * FROM WarnedProviders", engine)
         non_payment_list = pd.read_sql_query("SELECT * FROM ProviderNonPayment", engine)
 
-        # Check if WarnedProviders is empty
         is_first_run = warning_list.empty
 
-        # Relevant columns for WarnedProviders and ProviderNonPayment
         relevant_columns = ['Provider', 'Client', 'ProviderEmail', 'ServiceDate', 'AppStart', 'AppEnd', 'Status', 'CompanyRole', 'ConvertedDT']
 
         if is_first_run:
             data[relevant_columns].to_sql('WarnedProviders', engine, if_exists='append', index=False)
         else:
-            # Load existing data from WarnedProviders and ProviderNonPayment tables
             existing_warned_df = pd.read_sql('SELECT Provider, AppStart FROM WarnedProviders', engine)
             existing_non_payment_df = pd.read_sql('SELECT Provider, AppStart FROM ProviderNonPayment', engine)
 
-            # Create sets for efficient lookup
             warned_providers_set = set(zip(existing_warned_df['Provider'], existing_warned_df['AppStart']))
             non_payment_providers_set = set(zip(existing_non_payment_df['Provider'], existing_non_payment_df['AppStart']))
 
-            # Function to check if a row is in a set
             def is_in_set(row, check_set):
                 return (row['Provider'], row['AppStart']) in check_set
 
-            # Lists to hold new rows to be inserted
             new_warning_list = []
             new_non_payment_list = []
 

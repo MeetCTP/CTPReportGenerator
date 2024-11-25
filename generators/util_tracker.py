@@ -8,6 +8,46 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 import os
 import io
 
+def calculate_completion_percentage(data):
+    valid_data = data[data['SchedulingCancelledReason'].isna()]
+
+    grouped = valid_data.groupby(['Client', 'ServiceCode', 'AuthType'])
+
+    total_event_hours = grouped['EventHours'].transform('sum')
+
+    data['CompletedPercentage'] = np.nan
+
+    data.loc[valid_data.index, 'CompletedPercentage'] = np.where(
+        valid_data['AuthHours'] == 0, 
+        np.nan, 
+        (total_event_hours / valid_data['AuthHours']) * 100
+    )
+
+    return data
+
+def calculate_cancellation_percentage(data):
+    grouped = data.groupby(['Client', 'ServiceCode', 'AuthType'])
+
+    cancellation_stats = grouped.agg(
+        TotalSessions=('SchedulingCancelledReason', 'size'),
+        CancelledSessions=('SchedulingCancelledReason', lambda x: x.notnull().sum())
+    ).reset_index()
+
+    cancellation_stats['CancellationPercentage'] = (
+        cancellation_stats['CancelledSessions'] / cancellation_stats['TotalSessions']
+    ) * 100
+
+    data = pd.merge(
+        data,
+        cancellation_stats[['Client', 'ServiceCode', 'AuthType', 'CancellationPercentage']],
+        on=['Client', 'ServiceCode', 'AuthType'],
+        how='left'
+    )
+
+    data['CancellationPercentage'] = data['CancellationPercentage'].fillna(0)
+
+    return data
+
 def generate_util_tracker(start_date, end_date, provider):
     try:
         user_name = os.getlogin()
@@ -31,6 +71,9 @@ def generate_util_tracker(start_date, end_date, provider):
         general_indirect_kw = ['Indirect']
 
         def categorize_service(desc):
+            if pd.isnull(desc) or desc == '':
+                return 'Undefined', 'Undefined'
+
             for subcategory, keywords in indirect_categories.items():
                 if any(keyword in desc for keyword in keywords):
                     return 'Indirect', subcategory
@@ -44,9 +87,9 @@ def generate_util_tracker(start_date, end_date, provider):
             lambda desc: pd.Series(categorize_service(desc))
         )
 
-        data['CompletedPercentage'] = np.where(
-            data['AuthHours'] == 0, np.nan, (data['EventHours'] / data['AuthHours']) * 100
-        )
+        data['SchedulingCancelledReason'] = data['SchedulingCancelledReason'].replace('', np.nan)
+        data = calculate_completion_percentage(data)
+        data = calculate_cancellation_percentage(data)
 
         #if data['Subcategory'] == 'MakeUpTime'
 
