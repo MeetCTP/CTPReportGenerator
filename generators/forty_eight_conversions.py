@@ -29,9 +29,12 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
         """
         data = pd.read_sql_query(query, engine)
 
-        data['ServiceDate'] = pd.to_datetime(data['ServiceDate'])
-        data['ConvertedDT'] = pd.to_datetime(data['ConvertedDT'])
-        data['IsLate'] = (data['ConvertedDT'] - data['ServiceDate']).dt.days > 2
+        data['ServiceDate'] = pd.to_datetime(data['ServiceDate'], errors='coerce')
+        data['ConvertedDT'] = pd.to_datetime(data['ConvertedDT'], errors='coerce')
+        data['IsLate'] = data.apply(
+            lambda row: True if pd.isna(row['ConvertedDT']) else (row['ConvertedDT'] - row['ServiceDate']).days > 2,
+            axis=1
+        )
 
         data = data[(data['Status'] == 'Un-Converted') | (data['IsLate'])]
 
@@ -93,8 +96,8 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
         for _, row in contractor_data.iterrows():
             provider = row['Provider']
             email = row['ProviderEmail']
-            service_date = row['ServiceDate'].strftime('%m-%d-%Y')
-        
+            service_date = row['ServiceDate'].strftime('%m-%d-%Y') if pd.notna(row['ServiceDate']) else 'N/A'
+            
             mailing_list[email]['name'] = provider
             mailing_list[email]['email'] = email
             mailing_list[email]['appointments'].add(service_date)
@@ -110,11 +113,8 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
         data.to_excel(output_file, index=False)
         output_file.seek(0)
         #email_test()
-
-        print(warning_list.to_dict(orient='records'))
-        print(non_payment_list.to_dict(orient='records'))
         
-        return mailing_list, warning_list.to_dict(orient='records'), non_payment_list.to_dict(orient='records'), output_file
+        return mailing_list, warning_list.astype(str).to_dict(orient='records'), non_payment_list.astype(str).to_dict(orient='records'), output_file
     
     except Exception as e:
         print('Error occurred while generating the report: ', e)
