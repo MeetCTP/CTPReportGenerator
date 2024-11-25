@@ -184,6 +184,31 @@ main {
     float: right;
 }
 
+.desc-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 3px outset #999;
+    width: 50%;
+    margin: 0px auto;
+    padding-bottom: 1rem;
+}
+
+.in-bl {
+    display: inline-block;
+}
+
+.report-desc {
+    max-width: 30rem;
+    font-size: 1rem;
+}
+
+.warning {
+    font-size: 0.8rem;
+    color: #f00;
+}
+
 /*
 .side-banner {
     height: 100%;

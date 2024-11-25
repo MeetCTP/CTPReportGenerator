@@ -18,7 +18,7 @@
             <form id="report-form">
                 <label for="app-start">App Start Date:</label>
                 <input type="date" id="app-start" name="app-start" required>
-                <label for="app-end">App End Date (+1 day):</label>
+                <label for="app-end">App End Date:</label>
                 <input type="date" id="app-end" name="app-end" required>
                 <label for="converted-after">Converted After:</label>
                 <input type="date" id="converted-after" name="converted-after" required>
@@ -26,5 +26,19 @@
             </form>
         </div>
     </div>
+    <section class="desc-container">
+        <h2 class="in-bl">Report Description</h2>
+        <p class="report-desc">
+            The Late Conversions report is used for billing to find any appointments converted after their 
+            respective pay period. It can be used to find any appointments converted later than the chosen Converted 
+            After date as well, even if the date range selected does not coincide with a pay period. It finds 
+            all appointments withing the selected date range that are converted after the selected Converted After 
+            date.
+            <br>
+            <span class="warning">Some Central Reach labels may be inaccurate due to duplicates in their system.</span>
+            <br>
+            <span class="warning">This report does not include unconverted appointments.</span>
+        </p>
+    </section>
 </body>
 </html>
