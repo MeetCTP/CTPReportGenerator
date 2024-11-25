@@ -639,7 +639,8 @@ def send_emails():
 def handle_generate_client_cancel_report():
     if request.headers['Content-Type'] == 'application/json':
         data = request.get_json()
-        range_start = data.get('range_start')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
         provider = data.get('provider')
         client = data.get('client')
         cancel_reasons = data.get('cancel_reasons', [])
@@ -648,7 +649,7 @@ def handle_generate_client_cancel_report():
             return jsonify({"error": "At least one cancellation reason must be selected"}), 400
         
         try:
-            report_file = generate_client_cancel_report(provider, client, cancel_reasons, range_start)
+            report_file = generate_client_cancel_report(provider, client, cancel_reasons, start_date, end_date)
             return send_file(
                 report_file,
                 as_attachment=True,

@@ -19,7 +19,8 @@ function generateReport() {
     var form = document.getElementById('report-form');
     var formData = new FormData(form);
 
-    var range_start = formData.get('start_date')
+    var start_date = formData.get('start_date');
+    var end_date = formData.get('end_date');
     var provider = formData.get('provider');
     var client = formData.get('client');
     var cancelReasons = [];
@@ -34,13 +35,14 @@ function generateReport() {
         return;
     }
 
-    if (!range_start) {
+    if (!start_date) {
         alert("Please select a start date.");
         return;
     }
 
     var jsonData = JSON.stringify({
-        range_start: range_start,
+        start_date: start_date,
+        end_date: end_date,
         provider: provider,
         client: client,
         cancel_reasons: cancelReasons
