@@ -18,6 +18,7 @@ from generators.util_tracker import generate_util_tracker
 from generators.util_tracker import calculate_cancellation_percentage
 from generators.certification_expiration import generate_cert_exp_report
 from generators.pad_indirect_time_report import generate_pad_indirect
+from generators.monthly_active_users_report import generate_monthly_active_users
 from generators.code_look_up import code_search
 from flask_cors import CORS
 from datetime import datetime
@@ -401,6 +402,10 @@ def certification_expiration():
 def pad_indirect():
     return render_template('pad-indirect.html')
 
+@app.route('/report-generator/monthly-active')
+def monthly_active():
+    return render_template('monthly-active.html')
+
 @app.route('/report-generator/agora-match/generate-report', methods=['POST'])
 def generate_report():
     """Generates the Agora Match report."""
@@ -716,6 +721,25 @@ def handle_generate_pad_indirect_report():
                 report_file,
                 as_attachment=True,
                 download_name=f"PAD_Indirect_Time_Report_'{start_date}'-'{end_date}'.xlsx"
+            )
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
+
+@app.route('/report-generator/monthly-active/generate-report', methods=["POST"])
+def handle_generate_monthly_active_users_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        try:
+            report_file = generate_monthly_active_users(start_date, end_date)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=f"Monthly_Active_Users_Report_'{start_date}'-'{end_date}'.xlsx"
             )
         except Exception as e:
             return jsonify({'error': str(e)}), 500

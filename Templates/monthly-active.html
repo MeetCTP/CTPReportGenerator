@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Active Users Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/monthly-active.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>Monthly Active Users Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <label for="start-date">Start Date Range:</label>
+                <input type="date" id="start-date" name="start-date" required>
+                <label for="end-date">End Date Range:</label>
+                <input type="date" id="end-date" name="end-date" required>
+                <button id="generate" type="button">Generate Report</button>
+            </form>
+        </div>
+    </div>
+    <section class="desc-container">
+        <h2 class="in-bl">Report Description</h2>
+        <p class="report-desc">
+            The Agora Sessions Report shows all Central Reach sessions with Agora students between two given dates. 
+            It is to be used in conjunction with an Excel template that compares these sessions with EasyTrac.
+            <br>
+            <span class="warning">Some Central Reach labels may be inaccurate due to duplicates in their system.</span>
+            <br>
+            <span class="warning">This report will only show appointments logged in Central Reach.</span>
+        </p>
+    </section>
+</body>
+</html>

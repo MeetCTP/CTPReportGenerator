@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify({ company_roles: selectedRoles, start_date: startDate, end_date: endDate }),
             });
 
+            console.log(JSON.stringify({ company_roles: selectedRoles, start_date: startDate, end_date: endDate }))
+
             if (!reportResponse.ok) {
                 const errorResponse = await reportResponse.json();
                 throw new Error(errorResponse.error || 'Network response was not ok');
