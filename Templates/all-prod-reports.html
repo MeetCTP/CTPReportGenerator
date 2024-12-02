@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Reports</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+        <script src="{{ url_for('static', filename='js/report-page.js') }}"></script>
     </head>
         <body>
             <header>
@@ -18,23 +19,39 @@
                 </nav>
             </header>
             <div class="report-container">
-                <div class="report-row">
-                    <a class="report-link" href="http://ctphome/report-generator/agora-match">Agora CR Sessions Report</a>
-                    <a class="report-link" href="http://ctphome/report-generator/insight-match">Insight CR Sessions Report</a>
-                    <a class="report-link" href="http://ctphome/report-generator/active-contacts">Active Contacts Report</a>
+                <div class="folder-container">
+                    <div class="folder folder-toggle" aria-expanded="false">Billing</div>
+                    <div class="folder-content">
+                        <a class="report-link" href="http://ctphome/report-generator/late-conversions">Late Conversions Report</a>
+                        <a class="report-link" href="http://ctphome/report-generator/no-show-late-cancel">No Show/Late Cancel Report</a>
+                    </div>
                 </div>
-                <div class="report-row">
-                    <a class="report-link" href="http://ctphome/report-generator/late-conversions">Late Conversions Report</a>
-                    <a class="report-link" href="http://ctphome/report-generator/no-show-late-cancel">No Show/Late Cancel Report</a>
-                    <a class="report-link" href="http://ctphome/report-generator/provider-sessions">Provider Sessions Report</a>
+                <div class="folder-container">
+                    <div class="folder folder-toggle" aria-expanded="false">Documents</div>
+                    <div class="folder-content">
+                        <a class="report-link" href="http://ctphome/report-generator/certification-expiration">Certification Expiration Report</a>
+                    </div>
                 </div>
-                <div class="report-row">
-                    <a class="report-link" href="http://ctphome/report-generator/provider-connections">Provider Connections Report</a>
-                    <a class="report-link" href="http://ctphome/report-generator/forty-eight-hour-warning">48 Hour Conversion Report</a>
-                    <a class="report-link" href="http://ctphome/report-generator/client-cancels">High Cancellation Rate Report</a>
+                <div class="folder-container">
+                    <div class="folder folder-toggle" aria-expanded="false">Appointments</div>
+                    <div class="folder-content">
+                        <a class="report-link" href="http://ctphome/report-generator/agora-match">Agora CR Sessions Report</a>
+                        <a class="report-link" href="http://ctphome/report-generator/insight-match">Insight CR Sessions Report</a>
+                    </div>
                 </div>
-                <div class="report-row">
-                    <a class="report-link" href="http://ctphome/report-generator/certification-expiration">Certification Expiration Report</a>
+                <div class="folder-container">
+                    <div class="folder folder-toggle" aria-expanded="false">Contacts</div>
+                    <div class="folder-content">
+                        <a class="report-link" href="http://ctphome/report-generator/active-contacts">Active Contacts Report</a>
+                        <a class="report-link" href="http://ctphome/report-generator/provider-connections">Provider Connections Report</a>
+                    </div>
+                </div>
+                <div class="folder-container">
+                    <div class="folder folder-toggle" aria-expanded="false">Conversions</div>
+                    <div class="folder-content">
+                        <a class="report-link" href="http://ctphome/report-generator/forty-eight-hour-warning">48 Hour Conversion Report</a>
+                        <a class="report-link" href="http://ctphome/report-generator/client-cancels">High Cancellation Rate Report</a>
+                    </div>
                 </div>
             </div>
         </body>

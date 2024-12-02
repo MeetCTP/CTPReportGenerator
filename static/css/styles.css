@@ -105,7 +105,8 @@ main {
 
 .report-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-around;
     align-items: center;
     flex-shrink: 1;
     flex-grow: 1;
@@ -182,31 +183,6 @@ main {
 
 .report-nav {
     float: right;
-}
-
-.desc-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    border: 3px outset #999;
-    width: 50%;
-    margin: 0px auto;
-    padding-bottom: 1rem;
-}
-
-.in-bl {
-    display: inline-block;
-}
-
-.report-desc {
-    max-width: 30rem;
-    font-size: 1rem;
-}
-
-.warning {
-    font-size: 0.8rem;
-    color: #f00;
 }
 
 /*
@@ -437,6 +413,88 @@ main {
     border: 1px solid #000;
     border-radius: 10px;
     padding: 5px;
+}
+
+.folder {
+    cursor: pointer;
+    padding: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    background-color: #f4f4f4;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    margin: 5px 0;
+    color: #000;
+    transition: width 0.5s ease, background-color 0.5s ease;
+    display: inline-block;
+    width: 7rem;
+}
+
+.folder.expanded {
+    width: 20rem;
+}
+
+.folder-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.folder:hover {
+    background-color: #eaeaea;
+}
+
+.folder-content {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.5s ease, opacity 0.5s ease, width 0.5s ease;
+    margin: 0;
+    padding: 5px;
+    border-radius: 10px;
+    width: 0;
+}
+
+.folder-content.show {
+    max-height: 200px;
+    opacity: 1;
+    padding: 5px;
+    width: 21rem;
+}
+
+.report-link {
+    display: inline-block;
+    margin: 5px 0;
+    text-decoration: none;
+    color: #007bff;
+}
+
+.report-link:hover {
+    text-decoration: underline;
+}
+
+.desc-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 3px outset #999;
+    width: 50%;
+    margin: 0px auto;
+    padding-bottom: 1rem;
+}
+
+.in-bl {
+    display: inline-block;
+}
+
+.report-desc {
+    max-width: 30rem;
+    font-size: 1rem;
+}
+
+.warning {
+    font-size: 0.8rem;
+    color: #f00;
 }
 
 #search-label, #notif-label {
