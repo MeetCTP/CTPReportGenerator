@@ -74,11 +74,11 @@ megan = f"Megan.Leighton"
 #Groups
 admin_group = [lisa, admin, dan]
 recruiting_group = [amy, stacey]
-clinical_group = [megan]
+clinical_group = []
 accounting_group = [eileen, greg, cari]
 student_services_group = [eileen, cari, christi, olivia]
 human_resources_group = [aaron, linda]
-testing_group = [josh, fabian]
+testing_group = [josh, fabian, megan]
 site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy]
 
 def handle_submit_form_data(table, data):
@@ -408,18 +408,14 @@ def monthly_active():
 
 @app.route('/report-generator/agora-match/generate-report', methods=['POST'])
 def generate_report():
-    """Generates the Agora Match report."""
     if request.headers['Content-Type'] == 'application/json':
-        # Get start and end date values from the request body
         data = request.get_json()
         start_date = data['start_date']
         end_date = data['end_date']
 
         try:
-            # Call your Python function to generate the report
             excel_file = generate_appointment_agora_report(start_date, end_date)
 
-            # Return the Excel file as a download to the browser
             return send_file(
                 excel_file,
                 as_attachment=True,
