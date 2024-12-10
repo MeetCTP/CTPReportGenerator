@@ -3,8 +3,9 @@ import numpy as np
 from sqlalchemy import create_engine
 from datetime import datetime
 import pymssql
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
+from pandas import ExcelWriter
 import os
 import io
 
@@ -71,6 +72,17 @@ def generate_util_tracker(start_date, end_date, provider, client):
 
         data = pd.read_sql_query(query, engine)
 
+        ins_query = f"""
+            SELECT *
+            FROM InsuranceClinicalUtil
+        """
+        if conditions:
+            ins_query += " WHERE " + " AND ".join(conditions)
+
+        ins_query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
+
+        ins_data = pd.read_sql_query(ins_query, engine)
+
         indirect_categories = {
             'ProgressReports': ['Progress', 'Report'],
             'MakeUpTime': ['Make Up'],
@@ -96,17 +108,32 @@ def generate_util_tracker(start_date, end_date, provider, client):
             lambda desc: pd.Series(categorize_service(desc))
         )
 
+        ins_data[['Category', 'Subcategory']] = ins_data['ServiceCodeDescription'].apply(
+            lambda desc: pd.Series(categorize_service(desc))
+        )
+
         data['SchedulingCancelledReason'] = data['SchedulingCancelledReason'].replace('', np.nan)
         data = calculate_completion_percentage(data)
         data = calculate_cancellation_percentage(data)
+
+        ins_data['SchedulingCancelledReason'] = ins_data['SchedulingCancelledReason'].replace('', np.nan)
+        ins_data = calculate_completion_percentage(ins_data)
+        ins_data = calculate_cancellation_percentage(ins_data)
 
         #if data['Subcategory'] == 'MakeUpTime'
 
         data = data.sort_values(by='LastName', ascending=True)
         data.drop_duplicates(inplace=True)
 
+        ins_data = ins_data.sort_values(by='LastName', ascending=True)
+        ins_data.drop_duplicates(inplace=True)
+
         output_file = io.BytesIO()
-        data.to_excel(output_file, index=False)
+
+        with ExcelWriter(output_file, engine='openpyxl') as writer:
+            data.to_excel(writer, sheet_name="School", index=False)
+            ins_data.to_excel(writer, sheet_name="Insurance", index=False)
+
         output_file.seek(0)
         return output_file
 
