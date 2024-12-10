@@ -83,7 +83,7 @@ def generate_pad_indirect(start_date, end_date):
         query = f"""
             SELECT *
             FROM PADIndirectTimeView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{start_date}' AND '{end_date}')
         """
         data = pd.read_sql_query(query, engine)
 
