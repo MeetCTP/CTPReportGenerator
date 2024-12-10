@@ -70,9 +70,32 @@ input {
 }
 
 input, select, textarea {
-    border-radius: 5px;
+    border-radius: 10px;
     background-color: #bbb;
     margin: 5px;
+}
+
+select {
+    padding: 5px;
+}
+
+select::-webkit-scrollbar {
+    width: 12px;
+}
+
+select::-webkit-scrollbar-track {
+    background: #474785;
+    border-radius: 10px;
+}
+
+select::-webkit-scrollbar-thumb {
+    background-color: #0f1024;
+    border-radius: 10px;
+    border: 2px solid #999;
+}
+
+option {
+    height: 10rem;
 }
 
 /*
@@ -481,6 +504,7 @@ main {
     width: 50%;
     margin: 0px auto;
     padding-bottom: 1rem;
+    margin-bottom: 5rem;
 }
 
 .in-bl {
