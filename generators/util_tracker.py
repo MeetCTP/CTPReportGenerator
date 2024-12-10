@@ -48,7 +48,7 @@ def calculate_cancellation_percentage(data):
 
     return data
 
-def generate_util_tracker(start_date, end_date, provider):
+def generate_util_tracker(start_date, end_date, provider, client):
     try:
         user_name = os.getlogin()
         documents_path = f"C:/Users/{user_name}/Documents/"
@@ -58,8 +58,17 @@ def generate_util_tracker(start_date, end_date, provider):
         query = f"""
             SELECT *
             FROM ClinicalUtilizationTracker
-            WHERE (Provider = '{provider}') AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))
         """
+        conditions = []
+        if provider:
+            conditions.append(f"""Provider = '{provider}'""")
+        if client:
+            conditions.append(f"""Client = '{client}'""")
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
+
         data = pd.read_sql_query(query, engine)
 
         indirect_categories = {

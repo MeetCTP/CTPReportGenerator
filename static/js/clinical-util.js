@@ -6,16 +6,23 @@ document.addEventListener('DOMContentLoaded', function () {
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         const provider = document.getElementById('provider').value;
+        const client = document.getElementById('client').value;
 
-        if (!startDate || !endDate || !provider) {
-            alert('Please fill in all fields');
+        if (!startDate || !endDate) {
+            alert('Please fill in required fields');
+            return;
+        }
+
+        if (!provider && !client) {
+            alert('Please choose at least one provider or client');
             return;
         }
 
         const formData = {
             start_date: startDate,
             end_date: endDate,
-            provider: provider
+            provider: provider,
+            client: client
         };
         console.log('JSON Data:', formData);
 

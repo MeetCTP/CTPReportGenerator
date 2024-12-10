@@ -668,16 +668,21 @@ def handle_generate_clinical_util_report():
         start_date = data.get('start_date')
         end_date = data.get('end_date')
         provider = data.get('provider')
+        client = data.get('client')
 
-        if not provider:
-            return jsonify({"error": "Provider must be specified."})
+        if provider:
+            file_name = f"Clinical_Util_Tracker_'{provider}'_'{start_date}'-'{end_date}'.xlsx"
+        elif client:
+            file_name = f"Clinical_Util_Tracker_'{client}'_'{start_date}'-'{end_date}'.xlsx"
+        else:
+            file_name = f"Clinical_Util_Tracker_'{start_date}'-'{end_date}'.xlsx"
 
         try:
-            report_file = generate_util_tracker(start_date, end_date, provider)
+            report_file = generate_util_tracker(start_date, end_date, provider, client)
             return send_file(
                 report_file,
                 as_attachment=True,
-                download_name=f"Clinical_Util_Tracker_'{provider}'_'{start_date}'-'{end_date}'.xlsx"
+                download_name=file_name
             )
         except Exception as e:
             return jsonify({"error": str(e)}), 500
