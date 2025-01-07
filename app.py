@@ -70,12 +70,13 @@ greg = f"Gregory.T.Hughes"
 jesse = f"Jesse.Petrecz"
 olivia = f"Olivia.a.DiPasquale"
 megan = f"Megan.Leighton"
+deborah = f"Deborah.Debrule"
 
 #Groups
 admin_group = [lisa, admin, dan]
 recruiting_group = [amy, stacey]
 clinical_group = []
-accounting_group = [eileen, greg, cari]
+accounting_group = [eileen, greg, cari, deborah]
 student_services_group = [eileen, cari, christi, olivia]
 human_resources_group = [aaron, linda]
 testing_group = [josh, fabian, megan]
