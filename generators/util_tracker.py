@@ -52,7 +52,6 @@ def calculate_cancellation_percentage(data):
 def generate_util_tracker(start_date, end_date, provider, client):
     try:
         user_name = os.getlogin()
-        documents_path = f"C:/Users/{user_name}/Documents/"
         connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
         
@@ -103,22 +102,24 @@ def generate_util_tracker(start_date, end_date, provider, client):
                 return 'Indirect', 'Indirect Time'
 
             return 'Direct', 'Direct Time'
+        
+        if not data.empty:
+            data[['Category', 'Subcategory']] = data['ServiceCodeDescription'].apply(
+                lambda desc: pd.Series(categorize_service(desc))
+            )
 
-        data[['Category', 'Subcategory']] = data['ServiceCodeDescription'].apply(
-            lambda desc: pd.Series(categorize_service(desc))
-        )
+            data['SchedulingCancelledReason'] = data['SchedulingCancelledReason'].replace('', np.nan)
+            data = calculate_completion_percentage(data)
+            data = calculate_cancellation_percentage(data)
 
-        ins_data[['Category', 'Subcategory']] = ins_data['ServiceCodeDescription'].apply(
-            lambda desc: pd.Series(categorize_service(desc))
-        )
-
-        data['SchedulingCancelledReason'] = data['SchedulingCancelledReason'].replace('', np.nan)
-        data = calculate_completion_percentage(data)
-        data = calculate_cancellation_percentage(data)
-
-        ins_data['SchedulingCancelledReason'] = ins_data['SchedulingCancelledReason'].replace('', np.nan)
-        ins_data = calculate_completion_percentage(ins_data)
-        ins_data = calculate_cancellation_percentage(ins_data)
+        if not ins_data.empty:
+            ins_data[['Category', 'Subcategory']] = ins_data['ServiceCodeDescription'].apply(
+                lambda desc: pd.Series(categorize_service(desc))
+            )
+        
+            ins_data['SchedulingCancelledReason'] = ins_data['SchedulingCancelledReason'].replace('', np.nan)
+            ins_data = calculate_completion_percentage(ins_data)
+            ins_data = calculate_cancellation_percentage(ins_data)
 
         #if data['Subcategory'] == 'MakeUpTime'
 
@@ -128,12 +129,15 @@ def generate_util_tracker(start_date, end_date, provider, client):
         ins_data = ins_data.sort_values(by='LastName', ascending=True)
         ins_data.drop_duplicates(inplace=True)
 
+        data = pd.concat([data, ins_data], ignore_index=True)
+        data.drop_duplicates(inplace=True)
+
         output_file = io.BytesIO()
-
+        
         with ExcelWriter(output_file, engine='openpyxl') as writer:
-            data.to_excel(writer, sheet_name="School", index=False)
-            ins_data.to_excel(writer, sheet_name="Insurance", index=False)
-
+            data.to_excel(writer, sheet_name='Schools', index=False)
+            #ins_data.to_excel(writer, sheet_name='Insurance', index=False)
+        
         output_file.seek(0)
         return output_file
 
