@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Report Matching</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="{{ url_for('static', filename='js/school-match.js') }}" defer></script>
+</head>
+<body>
+    <main class="container-blk">
+        <section>
+            <h1>School Report Matching</h1>
+            <nav class="report-nav">
+                <a href="http://ctphome/report-generator">Back to Reports</a>
+                <a href="http://ctphome">Home</a>
+            </nav>
+        </section>
+        <section>
+            <form id="report-form">
+                <label for="start-date">Start Date Range:</label>
+                <input type="date" id="start-date" name="start-date" required>
+                <label for="end-date">End Date Range:</label>
+                <input type="date" id="end-date" name="end-date" required>
+                <label for="excel-file">Upload School Report File:</label>
+                <input type="file" id="excel-file" name="excel-file" accept=".xlsx" required>
+                <label>Select School:</label>
+                <div>
+                    <input type="radio" id="school-agora" name="school-choice" value="Agora" class="school-choice-btns" required>
+                    <label for="school-agora">Agora</label>
+                </div>
+                <div>
+                    <input type="radio" id="school-insight" name="school-choice" value="Insight" class="school-choice-btns" required>
+                    <label for="school-insight">Insight</label>
+                </div>
+                <button id="generate" type="button">Generate Report</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

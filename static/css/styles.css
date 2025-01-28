@@ -116,7 +116,7 @@ main {
     margin-right: 2rem;
 }
 
-.checkboxes {
+.checkboxes, .school-choice-btns {
     width: 2rem;
 }
 
@@ -141,6 +141,7 @@ main {
     border-radius: 10px;
     margin: 0px auto;
     width: 70%;
+    max-height:1000px;
 }
 
 .report-row {
@@ -332,6 +333,10 @@ main {
     width: 95%;
 }
 
+.notif-date {
+    color: #5f8eb9;
+}
+
 .qa-item {
     color: #666;
 }
@@ -458,6 +463,7 @@ main {
 .folder-container {
     display: flex;
     flex-direction: column;
+    max-height: 1000px;
 }
 
 .folder:hover {

@@ -88,7 +88,7 @@
                 <label id="notif-label">Notifications</label>
                 {% for notification in notifications %}
                     <div class="item-container-other">
-                        <p class="notification-item">{{ notification.EventDate }}: {{ notification.Body }}
+                        <p class="notification-item"><span class="notif-date">{{ notification.EventDate }}</span>: {{ notification.Body }}
                             {% if is_mod %}
                                 <button class="delete-btn" data-id="{{notification.NotifId}}" name="Notifications">Delete</button>
                             {% endif %}

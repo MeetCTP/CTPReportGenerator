@@ -19,6 +19,7 @@ from generators.util_tracker import calculate_cancellation_percentage
 from generators.certification_expiration import generate_cert_exp_report
 from generators.pad_indirect_time_report import generate_pad_indirect
 from generators.monthly_active_users_report import generate_monthly_active_users
+from generators.original_agora_report import generate_original_agora_report
 from generators.code_look_up import code_search
 from flask_cors import CORS
 from datetime import datetime
@@ -64,17 +65,17 @@ linda = f"Linda.Brooks"
 eileen = f"Eileen.H.Council"
 cari = f"Cari.Tomczyk"
 amy = f"Amy.P.Ronen"
-stacey = f"Stacey.A.Nardo"
 christi = f"Christina.K.Sampson"
 greg = f"Gregory.T.Hughes"
 jesse = f"Jesse.Petrecz"
 olivia = f"Olivia.a.DiPasquale"
 megan = f"Megan.Leighton"
 deborah = f"Deborah.Debrule"
+kim = f"Kimberly.D.Trate"
 
 #Groups
 admin_group = [lisa, admin, dan]
-recruiting_group = [amy, stacey]
+recruiting_group = [amy, kim]
 clinical_group = []
 accounting_group = [eileen, greg, cari, deborah]
 student_services_group = [eileen, cari, christi, olivia]
@@ -166,9 +167,18 @@ def fetch_data():
             'Title': article.Title,
             'Body': article.Body,
             'ImageBase64': get_image_as_base64(article.Attachment),
-            'RowModifiedAt': article.RowModifiedAt
+            'RowModifiedAt': article.RowModifiedAt.strftime('%m/%d/%Y %I:%M%p')
         }
         for article in news_articles
+    ]
+
+    notifications = [
+        {
+            'NotifId': notif.NotifId,
+            'EventDate': notif.EventDate.strftime('%m/%d/%Y'),
+            'Body': notif.Body
+        }
+        for notif in notifications
     ]
 
     qa_dict = {qa.QAId: {'Id': qa.QAId, 'Body': qa.Body, 'responses': []} for qa in weekly_qas}
@@ -336,6 +346,8 @@ def reports():
         return render_template('all-prod-reports.html')
     elif username in human_resources_group:
         return render_template('all-prod-reports.html')
+    elif username in recruiting_group:
+        return render_template('all-prod-reports.html')
     elif username in testing_group:
         return render_template('all-reports.html')
     else:
@@ -407,6 +419,39 @@ def pad_indirect():
 def monthly_active():
     return render_template('monthly-active.html')
 
+@app.route('/report-generator/school-matching')
+def school_match():
+    return render_template('school-match.html')
+
+@app.route('/report-generator/school-matching/generate-report', methods=['POST'])
+def handle_generate_school_matching_report():
+    start_date = request.form.get('start_date')
+    end_date = request.form.get('end_date')
+    school_choice = request.form.get('school')
+    excel_file = request.files.get('excel_file')
+
+    if not start_date or not end_date:
+        return jsonify({'error': 'Start and end dates are required.'}), 400
+    if not school_choice:
+        return jsonify({'error': 'School choice is required.'}), 400
+
+    try:
+        if school_choice == 'Agora':
+            report_file = generate_appointment_agora_report(start_date, end_date, excel_file)
+        elif school_choice == 'Insight':
+            report_file = generate_appointment_insight_report(start_date, end_date, excel_file)
+        else:
+            return jsonify({'error': 'Invalid school choice.'}), 400
+
+        return send_file(
+            report_file,
+            as_attachment=True,
+            download_name=f"{school_choice}_Appointment_Match_Report_{start_date}-{end_date}.xlsx"
+        )
+    except Exception as e:
+        print('Exception occurred:', e)
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/report-generator/agora-match/generate-report', methods=['POST'])
 def generate_report():
     if request.headers['Content-Type'] == 'application/json':
@@ -415,7 +460,7 @@ def generate_report():
         end_date = data['end_date']
 
         try:
-            excel_file = generate_appointment_agora_report(start_date, end_date)
+            excel_file = generate_original_agora_report(start_date, end_date)
 
             return send_file(
                 excel_file,
@@ -432,16 +477,13 @@ def generate_report():
 def handle_generate_insight_report():
     """Generates the Insight Match report."""
     if request.headers['Content-Type'] == 'application/json':
-        # Get start and end date values from the request body
         data = request.get_json()
         start_date = data['start_date']
         end_date = data['end_date']
 
         try:
-            # Call your Python function to generate the report
             excel_file = generate_appointment_insight_report(start_date, end_date)
 
-            # Return the Excel file as a download to the browser
             return send_file(
                 excel_file,
                 as_attachment=True,
