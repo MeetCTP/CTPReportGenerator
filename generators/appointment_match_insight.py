@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 import os
 import io
 
-def generate_appointment_insight_report(range_start, range_end, rsm_file):
+def generate_appointment_insight_report(range_start, range_end, rsm_file, employment_type):
     try:
         user_name = os.getlogin()
         connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
@@ -27,8 +27,9 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file):
 
         appointment_match_data.drop_duplicates(inplace=True)
         appointment_match_data.drop('School', axis=1, inplace=True)
-        appointment_match_data['Therapy Start Time'] = appointment_match_data['Therapy Start Time'].dt.strftime('%m/%d/%Y %I:%M%p')
-        appointment_match_data['Therapy End Time'] = appointment_match_data['Therapy End Time'].dt.strftime('%m/%d/%Y %I:%M%p')
+        
+        if employment_type:
+            appointment_match_data = appointment_match_data[appointment_match_data['EmploymentType'] == employment_type]
 
         if rsm_file:
             rsm_file.seek(0)
@@ -41,9 +42,17 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file):
             
             rsm_data['Date of Service'] = pd.to_datetime(rsm_data['Date of Service']).dt.normalize().astype(object)
             rsm_data['Student ID'] = rsm_data['Student ID'].astype('object')
+
+            rsm_data = pd.merge(rsm_data, appointment_match_data[["Therapist", "EmploymentType"]], 
+                                on='Therapist', how='left')
             
+            if employment_type:
+                rsm_data = rsm_data[rsm_data['EmploymentType'] == employment_type]
             
-            time_diffs, aligned_rsm_data, aligned_cr_data = find_time_discrepancies(appointment_match_data, rsm_data)
+            time_diffs, missing_from = find_time_discrepancies(rsm_data, appointment_match_data)
+
+            appointment_match_data.drop_duplicates(inplace=True)
+            rsm_data.drop_duplicates(inplace=True)
             
             output_file = io.BytesIO()
             with ExcelWriter(output_file, engine='openpyxl') as writer:
@@ -56,6 +65,9 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file):
             output_file.seek(0)
             return output_file
         else:
+            appointment_match_data['Therapy Start Time'] = appointment_match_data['Therapy Start Time'].dt.strftime('%m/%d/%Y %I:%M%p')
+            appointment_match_data['Therapy End Time'] = appointment_match_data['Therapy End Time'].dt.strftime('%m/%d/%Y %I:%M%p')
+            
             output_file = io.BytesIO()
             appointment_match_data.to_excel(output_file, index=False)
             output_file.seek(0)

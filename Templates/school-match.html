@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Report Matching</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script defer>
+        const logoUrl = "{{ url_for('static', filename='css/assets/cropped-ctp-loading-logo.jpg') }}";
+    </script>
     <script src="{{ url_for('static', filename='js/school-match.js') }}" defer></script>
 </head>
 <body>
@@ -24,6 +27,13 @@
                 <input type="date" id="end-date" name="end-date" required>
                 <label for="excel-file">Upload School Report File:</label>
                 <input type="file" id="excel-file" name="excel-file" accept=".xlsx" required>
+                <label>Employee Type:</label>
+                <div class="active-row">
+                    <input class="school-choice-btns" type="radio" id="employee" name="pg_type" value="CompanyRole: Employee">
+                    <label for="employee">Employee</label>
+                    <input class="school-choice-btns" type="radio" id="contractor" name="pg_type" value="CompanyRole: Contractor">
+                    <label for="contractor">Contractor</label>
+                </div>
                 <label>Select School:</label>
                 <div>
                     <input type="radio" id="school-agora" name="school-choice" value="Agora" class="school-choice-btns" required>

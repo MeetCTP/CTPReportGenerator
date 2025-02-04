@@ -77,10 +77,10 @@ kim = f"Kimberly.D.Trate"
 admin_group = [lisa, admin, dan]
 recruiting_group = [amy, kim]
 clinical_group = []
-accounting_group = [eileen, greg, cari, deborah]
-student_services_group = [eileen, cari, christi, olivia]
+accounting_group = [eileen, greg, deborah]
+student_services_group = [eileen, christi, olivia]
 human_resources_group = [aaron, linda]
-testing_group = [josh, fabian, megan]
+testing_group = [josh, fabian, megan, cari]
 site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy]
 
 def handle_submit_form_data(table, data):
@@ -428,8 +428,10 @@ def handle_generate_school_matching_report():
     start_date = request.form.get('start_date')
     end_date = request.form.get('end_date')
     school_choice = request.form.get('school')
+    pg_type = request.form.get('pg_type')
     excel_file = request.files.get('excel_file')
 
+    # Validate inputs
     if not start_date or not end_date:
         return jsonify({'error': 'Start and end dates are required.'}), 400
     if not school_choice:
@@ -437,9 +439,9 @@ def handle_generate_school_matching_report():
 
     try:
         if school_choice == 'Agora':
-            report_file = generate_appointment_agora_report(start_date, end_date, excel_file)
+            report_file = generate_appointment_agora_report(start_date, end_date, excel_file, pg_type)
         elif school_choice == 'Insight':
-            report_file = generate_appointment_insight_report(start_date, end_date, excel_file)
+            report_file = generate_appointment_insight_report(start_date, end_date, excel_file, pg_type)
         else:
             return jsonify({'error': 'Invalid school choice.'}), 400
 

@@ -707,3 +707,20 @@ main {
 #query {
     width: 80%;
 }
+
+#company-logo {
+    animation: rotateLogo 3s infinite linear;
+    z-index: 100;
+}
+
+@keyframes rotateLogo {
+    0% {
+        transform: rotateY(0deg);
+    }
+    50% {
+        transform: rotateY(180deg);
+    }
+    100% {
+        transform: rotateY(360deg);
+    }
+}
