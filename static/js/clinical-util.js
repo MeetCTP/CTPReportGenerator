@@ -3,6 +3,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const generateButton = document.getElementById('generate');
 
     generateButton.addEventListener('click', function () {
+        var messageDiv = document.getElementById('loading-message');
+        if (!messageDiv) {
+            messageDiv = document.createElement('div');
+            messageDiv.id = 'loading-message';
+            messageDiv.style.position = 'fixed';
+            messageDiv.style.top = '50%';
+            messageDiv.style.left = '50%';
+            messageDiv.style.transform = 'translate(-50%, -50%)';
+            messageDiv.style.padding = '20px';
+            messageDiv.style.backgroundColor = '#666';
+            messageDiv.style.border = '1px solid #ccc';
+            messageDiv.style.zIndex = '1000';
+            messageDiv.style.textAlign = 'center';
+            messageDiv.innerHTML = '<p>Generating the report, please be patient. This might take a few minutes...</p>';
+            document.body.appendChild(messageDiv);
+        }
+
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         const provider = document.getElementById('provider').value;
@@ -42,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
+                    messageDiv.style.display = 'none';
                     document.body.removeChild(a);
                 } else {
                     var reader = new FileReader();
