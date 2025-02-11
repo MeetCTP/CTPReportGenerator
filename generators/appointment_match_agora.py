@@ -53,6 +53,17 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
             
             if employment_type:
                 et_data = et_data[et_data['EmploymentType'] == employment_type]
+                
+            for df in [appointment_match_data, et_data]:
+                for col in df.select_dtypes(include=['object']).columns:
+                    df[col] = df[col].astype(str).str.strip()
+                    df[col] = df[col].astype('object')
+            
+                for col in ['Provider', 'StudentFirstName', 'StudentLastName']:
+                    if col in df.columns:
+                        df[col] = df[col].astype(str).str.upper()
+                        df[col] = df[col].str.replace(r'\s*(JR\.|SR\.|III|II|IV)\s*$', '', regex=True)
+                        df[col] = df[col].astype('object')
 
             mile_diffs, et_virtual, cr_mileage, et_mileage = find_mileage_discrepancies(et_data, appointment_match_data)
             time_diffs, missing_from = find_time_discrepancies(et_data, appointment_match_data, et_virtual)
@@ -65,8 +76,6 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
             with ExcelWriter(output_file, engine='openpyxl') as writer:
                 appointment_match_data.to_excel(writer, sheet_name="CR Data", index=False)
                 et_data.to_excel(writer, sheet_name="ET Data", index=False)
-                #cr_mileage.to_excel(writer, sheet_name="CR Mileage Entries", index=False)
-                #et_mileage.to_excel(writer, sheet_name="ET Mileage Entries", index=False)
                 #duplicates.to_excel(writer, sheet_name="Exact Matches", index=False)
                 mile_diffs.to_excel(writer, sheet_name="Mileage Discrepancies", index=False)
                 high_miles.to_excel(writer, sheet_name="Mileage over 60", index=False)
@@ -93,10 +102,11 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
         engine.dispose()
 
 def find_mileage_discrepancies(et_data, cr_data):
+    cr_data['Mileage'] = cr_data['Mileage'].astype('float')
     et_mileage = et_data[et_data['Type'].str.contains('Mileage', case=False, na=False)]
     et_virtual = et_data[~et_data['Type'].str.contains('Mileage', case=False, na=False)]
     cr_mileage = cr_data[
-        (cr_data['Mileage'] != 0) & (cr_data['Mileage'].notnull())
+        (cr_data['Mileage'] != 0.0) & (cr_data['Mileage'].notnull())
     ].copy()
 
     et_mileage = et_mileage[
@@ -110,14 +120,9 @@ def find_mileage_discrepancies(et_data, cr_data):
     et_mileage = et_mileage.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
     cr_mileage = cr_mileage.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
 
-    for frame in [et_mileage, cr_mileage]:
-        for column in frame.select_dtypes(include=['object']).columns:
-            frame[column] = frame[column].astype(str).str.strip()
-            frame[column] = frame[column].astype('object')
-
-    merged_mileage = et_mileage.merge(
-        cr_mileage,
-        on=['Provider', 'StudentCode', 'ServiceDate'],
+    merged_mileage = pd.merge(
+        et_mileage, cr_mileage,
+        on=['Provider', 'ServiceDate'],
         how='outer',
         indicator=True
     )
@@ -135,11 +140,6 @@ def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
     aligned_et_data = et_virtual[
         ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'ServiceDate', 'StartTime', 'EndTime']
     ]
-    
-    for df in [aligned_match_data, aligned_et_data]:
-        for col in df.select_dtypes(include=['object']).columns:
-            df[col] = df[col].astype(str).str.strip()
-            df[col] = df[col].astype('object')
 
     aligned_match_data.drop_duplicates(inplace=True)
     aligned_et_data.drop_duplicates(inplace=True)
@@ -150,9 +150,9 @@ def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
 
     time_differences = find_time_diffs(aligned_match_data, aligned_et_data)
 
-    missing_from = find_missing_from(aligned_match_data, aligned_et_data, appointment_match_data, time_differences)
+    missing_from = find_missing_from(aligned_match_data, aligned_et_data, time_differences)
     
-    return time_differences, missing_from  
+    return time_differences, missing_from
 
 def find_high_mileage(cr_data, et_data):
     cr_data = cr_data[
@@ -169,7 +169,6 @@ def find_time_diffs(cr_copy, et_copy):
     cr_copy = cr_copy.copy()
     et_copy = et_copy.copy()
 
-    # Extracting hour and minute from StartTime and EndTime
     cr_copy["StartTime_Hour"] = pd.to_datetime(cr_copy["StartTime"]).dt.hour
     cr_copy["StartTime_Minute"] = pd.to_datetime(cr_copy["StartTime"]).dt.minute
     cr_copy["EndTime_Hour"] = pd.to_datetime(cr_copy["EndTime"]).dt.hour
@@ -180,36 +179,32 @@ def find_time_diffs(cr_copy, et_copy):
     et_copy["EndTime_Hour"] = pd.to_datetime(et_copy["EndTime"]).dt.hour
     et_copy["EndTime_Minute"] = pd.to_datetime(et_copy["EndTime"]).dt.minute
 
-    # Merge based on matching hour values for StartTime and EndTime
     merged = pd.merge(cr_copy, et_copy, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", "StartTime_Hour", "EndTime_Hour"], how="outer", suffixes=("_CR", "_ET"))
+
+    minute_match_condition = (
+        (merged["StartTime_Minute_CR"] == merged["StartTime_Minute_ET"]) |
+        (merged["EndTime_Minute_CR"] == merged["EndTime_Minute_ET"])
+    )
 
     merged = merged.dropna(subset=["StartTime_CR", "StartTime_ET", "EndTime_CR", "EndTime_ET"])
     
-    # Initialize DiscrepancyType
     merged["DiscrepancyType"] = None
 
-    # Check for StartTime discrepancies: compare minutes when hours match
-    start_time_minute_diff = (merged["StartTime_Minute_CR"] != merged["StartTime_Minute_ET"])
+    start_time_minute_diff = (merged["StartTime_Minute_CR"] != merged["StartTime_Minute_ET"]) & minute_match_condition
     merged.loc[start_time_minute_diff, "DiscrepancyType"] = "Time(Start)"
 
-    # Check for EndTime discrepancies: compare minutes when hours match
-    end_time_minute_diff = (merged["EndTime_Minute_CR"] != merged["EndTime_Minute_ET"])
+    end_time_minute_diff = (merged["EndTime_Minute_CR"] != merged["EndTime_Minute_ET"]) & minute_match_condition
     merged.loc[end_time_minute_diff, "DiscrepancyType"] = "Time(End)"
 
-    # Filter out rows with no discrepancies
     merged["DiscrepancyType"] = merged["DiscrepancyType"].fillna("No Discrepancy")
     
-    # Only include rows with discrepancies
     discrepancy_df = merged[["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", 'Status', 'CancellationReason', 
                              "StartTime_CR", "StartTime_ET", "EndTime_CR", "EndTime_ET", "DiscrepancyType"]]
 
-    # Drop rows with no discrepancies
     discrepancy_df = discrepancy_df[discrepancy_df['DiscrepancyType'] != "No Discrepancy"]
     
-    # Ensure ServiceDate is in the correct format
     discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
 
-    # Sort and remove duplicates
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
     discrepancy_df.drop_duplicates(inplace=True)
     
@@ -259,28 +254,32 @@ def find_end_time_diffs(cr_copy, et_copy):
     
     return discrepancy_df
 
-def find_missing_from(aligned_match_data, aligned_et_data, cr_data, time_diffs):
-    aligned_match_data = aligned_match_data.rename(columns={"StartTime": "StartTime_CR"})
-    aligned_et_data = aligned_et_data.rename(columns={"StartTime": "StartTime_ET"})
+def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
+    merged_df = pd.merge(aligned_match_data, aligned_et_data, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", "EndTime"], how="left", suffixes=("_CR", "_ET"))
     
-    merged_df = pd.merge(aligned_match_data, aligned_et_data, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", "EndTime"], how="outer")
-    
-    merged_df["DiscrepancyType"] = None
-    #merged_df.loc[merged_df["StartTime_CR"].isna(), "DiscrepancyType"] = "Missing from CR"
-    merged_df.loc[merged_df["StartTime_ET"].isna(), "DiscrepancyType"] = "Missing from ET"
+    missing_from_et_df = merged_df[merged_df["StartTime_ET"].isna()]
 
+    missing_from_et_df["DiscrepancyType"] = "Missing from ET"
     
+    missing_from_et_df['ServiceDate'] = pd.to_datetime(missing_from_et_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
+    
+    discrepancy_df = merged_df = pd.merge(missing_from_et_df, time_diffs, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", "StartTime_CR"], how="left", indicator=True)
+    
+    discrepancy_df = discrepancy_df[merged_df['_merge'] == 'left_only']
+    
+    discrepancy_df.drop(columns=['_merge'], inplace=True)
 
-    discrepancy_df = merged_df[["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", 'Status', 'CancellationReason', 
-                                "StartTime_CR", "EndTime", "DiscrepancyType"]]
+    discrepancy_df = discrepancy_df[["Provider", "StudentFirstName", "StudentLastName", 
+                                         "StudentCode", "Status_x", "ServiceDate",
+                                         "StartTime_CR", "EndTime"]]
     
-    discrepancy_df = discrepancy_df[discrepancy_df['Status'] != 'Un-Converted']
+    discrepancy_df = discrepancy_df[discrepancy_df['Status_x'] != 'Un-Converted']
     
-    discrepancy_df = merged_df.dropna(subset=["DiscrepancyType"])
+    discrepancy_df.drop_duplicates(inplace=True)
     
     discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
+    
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
-    discrepancy_df.drop_duplicates(inplace=True)
     
     return discrepancy_df
 

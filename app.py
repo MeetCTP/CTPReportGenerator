@@ -20,6 +20,7 @@ from generators.certification_expiration import generate_cert_exp_report
 from generators.pad_indirect_time_report import generate_pad_indirect
 from generators.monthly_active_users_report import generate_monthly_active_users
 from generators.original_agora_report import generate_original_agora_report
+from generators.original_insight_report import generate_original_insight_report
 from generators.code_look_up import code_search
 from flask_cors import CORS
 from datetime import datetime
@@ -484,7 +485,7 @@ def handle_generate_insight_report():
         end_date = data['end_date']
 
         try:
-            excel_file = generate_appointment_insight_report(start_date, end_date)
+            excel_file = generate_original_insight_report(start_date, end_date)
 
             return send_file(
                 excel_file,
