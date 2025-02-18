@@ -62,7 +62,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                 for col in ['Provider', 'StudentFirstName', 'StudentLastName']:
                     if col in df.columns:
                         df[col] = df[col].astype(str).str.upper()
-                        df[col] = df[col].str.replace(r'\s*(JR\.|SR\.|III|II|IV)\s*$', '', regex=True)
+                        df[col] = df[col].str.replace(r'\s*(JR\.|SR\.|III|II|IV|-)\s*$', '', regex=True)
                         df[col] = df[col].astype('object')
 
             mile_diffs, et_virtual, cr_mileage, et_mileage = find_mileage_discrepancies(et_data, appointment_match_data)
@@ -271,7 +271,7 @@ def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
 
     discrepancy_df = discrepancy_df[["Provider", "StudentFirstName", "StudentLastName", 
                                          "StudentCode", "Status_x", "ServiceDate",
-                                         "StartTime_CR", "EndTime"]]
+                                         "StartTime_CR", "EndTime", "CancellationReason_x"]]
     
     discrepancy_df = discrepancy_df[discrepancy_df['Status_x'] != 'Un-Converted']
     
