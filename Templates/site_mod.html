@@ -19,7 +19,7 @@
     </header>
     <section class="mod-container container-blk">
         <h3>Add News</h3>
-        <div>
+        <div class="set-form-box">
             <form class="set-forms" id="news-form" enctype="multipart/form-data">
                 <input type="hidden" name="form_type" value="news">
                 <label>Title: </label>
@@ -28,27 +28,27 @@
                 <textarea name="Body" id="news-body" cols="40" rows="5"></textarea>
                 <label>Image</label>
                 <input type="file" id="image" name="filename">
-                <button type="button" onclick="submitForm('news-form')">Submit</button>
+                <button class="set-submit-btn" type="button" onclick="submitForm('news-form')">Submit</button>
             </form>
         </div>
         <h3>Add Notification</h3>
-        <div>
+        <div class="set-form-box">
             <form class="set-forms" id="notification-form">
                 <input type="hidden" name="form_type" value="notification">
                 <label>Event Date: </label>
                 <input type="date" id="date" name="EventDate" required>
                 <label>Notification: </label>
                 <textarea name="Body" id="notification-body" cols="40" rows="5"></textarea>
-                <button type="button" onclick="submitForm('notification-form')">Submit</button>
+                <button class="set-submit-btn" type="button" onclick="submitForm('notification-form')">Submit</button>
             </form>
         </div>
         <h3>Add Weekly Q&A</h3>
-        <div>
+        <div class="set-form-box">
             <form class="set-forms" id="QA-form">
                 <input type="hidden" name="form_type" value="qa">
                 <label>Question: </label>
                 <textarea name="Body" id="qa-body" cols="40" rows="5"></textarea>
-                <button type="button" onclick="submitForm('QA-form')">Submit</button>
+                <button class="set-submit-btn" type="button" onclick="submitForm('QA-form')">Submit</button>
             </form>
         </div>
     </section>

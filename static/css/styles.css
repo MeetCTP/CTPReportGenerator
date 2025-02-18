@@ -195,6 +195,13 @@ main {
     flex-direction: column;
 }
 
+.mod-container>h3 {
+    background-color: #444;
+    width: 15%;
+    border-radius: 10px;
+    padding: 10px;
+}
+
 .set-forms {
     width: 50%;
     display: flex;
@@ -203,6 +210,19 @@ main {
 
 .set-forms input, .set-forms textarea {
     margin-bottom: 1rem;
+}
+
+.set-form-box {
+    background-color: #ddd;
+    border: 5px outset #aaa;
+    border-radius: 10px;
+    width: 60%;
+    padding: 10px;
+    color: #111;
+}
+
+.set-submit-btn {
+    border: 2px solid #000;
 }
 
 .report-nav {
@@ -706,6 +726,22 @@ main {
 
 #query {
     width: 80%;
+}
+
+#news-body {
+    border: 2px outset #000;
+}
+
+#image {
+    border: 2px outset #000;
+}
+
+#notification-body {
+    border: 2px outset #000;
+}
+
+#qa-body {
+    border: 2px outset #000;
 }
 
 #company-logo {
