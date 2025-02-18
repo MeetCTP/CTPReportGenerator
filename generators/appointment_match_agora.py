@@ -135,7 +135,7 @@ def find_mileage_discrepancies(et_data, cr_data):
 
 def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
     aligned_match_data = appointment_match_data[
-        ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'ServiceDate', 'StartTime', 'EndTime', 'Status', 'CancellationReason']
+        ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'BillingCode', 'ServiceDate', 'StartTime', 'EndTime', 'Status', 'CancellationReason']
     ]
     aligned_et_data = et_virtual[
         ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'ServiceDate', 'StartTime', 'EndTime']
@@ -198,8 +198,8 @@ def find_time_diffs(cr_copy, et_copy):
 
     merged["DiscrepancyType"] = merged["DiscrepancyType"].fillna("No Discrepancy")
     
-    discrepancy_df = merged[["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", 'Status', 'CancellationReason', 
-                             "StartTime_CR", "StartTime_ET", "EndTime_CR", "EndTime_ET", "DiscrepancyType"]]
+    discrepancy_df = merged[["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "BillingCode", "ServiceDate", 'Status', 'CancellationReason', 
+                         "StartTime_CR", "StartTime_ET", "EndTime_CR", "EndTime_ET", "DiscrepancyType"]]
 
     discrepancy_df = discrepancy_df[discrepancy_df['DiscrepancyType'] != "No Discrepancy"]
     
@@ -270,8 +270,8 @@ def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
     discrepancy_df.drop(columns=['_merge'], inplace=True)
 
     discrepancy_df = discrepancy_df[["Provider", "StudentFirstName", "StudentLastName", 
-                                         "StudentCode", "Status_x", "ServiceDate",
-                                         "StartTime_CR", "EndTime", "CancellationReason_x"]]
+                                     "StudentCode", "BillingCode_x", "Status_x", "ServiceDate",
+                                     "StartTime_CR", "EndTime", "CancellationReason_x"]]
     
     discrepancy_df = discrepancy_df[discrepancy_df['Status_x'] != 'Un-Converted']
     
