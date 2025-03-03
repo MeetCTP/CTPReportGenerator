@@ -272,7 +272,7 @@ def find_time_diffs(cr_copy, et_copy):
     discrepancy_df.drop(columns=['BillingCode_x', 'BillingCode_y', 'CancellationReason_x', 'StudentCode_CR', 'StudentCode_ET', 'CancellationReason_y'], inplace=True)
 
     discrepancy_df = discrepancy_df[["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "BillingCode", "ServiceDate", 'Status', 'CancellationReason', 
-                         "StartTime_CR", "StartTime_ET", "EndTime_CR", "EndTime_ET", "DiscrepancyType"]]
+                         "StartTime_CR", "StartTime_ET", "EndTime_CR", "EndTime_ET"]]
     
     #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
@@ -351,12 +351,24 @@ def find_overlapping_appointments(cr_copy, et_copy):
     merged = pd.merge(cr_copy, et_copy, on=["Provider", "StudentFirstName", "StudentLastName", "Status", "ServiceDate"], 
                       suffixes=('_CR', '_ET'), how='outer')
     
+    merged["StartTime_CR"] = pd.to_datetime(merged["StartTime_CR"], format='%I:%M%p').dt.strftime('%H:%M')
+    merged["EndTime_CR"] = pd.to_datetime(merged["EndTime_CR"], format='%I:%M%p').dt.strftime('%H:%M')
+    merged["StartTime_ET"] = pd.to_datetime(merged["StartTime_ET"], format='%I:%M%p').dt.strftime('%H:%M')
+    merged["EndTime_ET"] = pd.to_datetime(merged["EndTime_ET"], format='%I:%M%p').dt.strftime('%H:%M')
+    
     overlap_condition = (
         (merged["StartTime_CR"] < merged["EndTime_ET"]) & (merged["StartTime_CR"] > merged["StartTime_ET"]) |
-        (merged["EndTime_CR"] < merged["EndTime_ET"]) & (merged["EndTime_CR"] > merged["StartTime_ET"])
+        (merged["EndTime_CR"] < merged["EndTime_ET"]) & (merged["EndTime_CR"] > merged["StartTime_ET"]) | 
+        (merged["StartTime_ET"] < merged["EndTime_CR"]) & (merged["StartTime_ET"] > merged["StartTime_CR"]) |
+        (merged["EndTime_ET"] < merged["EndTime_CR"]) & (merged["EndTime_ET"] > merged["StartTime_CR"])
     )
 
     overlap_df = merged[overlap_condition]
+    
+    overlap_df["StartTime_CR"] = pd.to_datetime(overlap_df["StartTime_CR"], format='%H:%M').dt.strftime('%I:%M%p').astype('object')
+    overlap_df["EndTime_CR"] = pd.to_datetime(overlap_df["EndTime_CR"], format='%H:%M').dt.strftime('%I:%M%p').astype('object')
+    overlap_df["StartTime_ET"] = pd.to_datetime(overlap_df["StartTime_ET"], format='%H:%M').dt.strftime('%I:%M%p').astype('object')
+    overlap_df["EndTime_ET"] = pd.to_datetime(overlap_df["EndTime_ET"], format='%H:%M').dt.strftime('%I:%M%p').astype('object')
     
     return overlap_df
 
