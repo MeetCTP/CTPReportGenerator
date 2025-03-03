@@ -24,11 +24,13 @@
                     <label for="end-date">End Date:</label>
                     <input type="date" id="end-date" name="end_date" required>
                 </div>
-                <label for="provider">Provider Name:</label>
-                <input type="text" id="provider" name="provider">
-                <label for="client">Client Name:</label>
-                <input type="text" id="client" name="client">
-
+                <div class="active-row">
+                    <input class="checkboxes" type="radio" id="employee" name="company_role" value="Employee">
+                    <label for="employee">Employee</label>
+                    <input class="checkboxes" type="radio" id="contractor" name="company_role" value="Contractor">
+                    <label for="contractor">Contractor</label>
+                </div>
+            
                 <button id="generate" type="button">Generate Report</button>
             </form>
         </div>

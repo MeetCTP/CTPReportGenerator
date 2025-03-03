@@ -49,34 +49,44 @@ def calculate_cancellation_percentage(data):
 
     return data
 
-def generate_util_tracker(start_date, end_date, provider, client):
+def generate_util_tracker(start_date, end_date, company_role):
     try:
         user_name = os.getlogin()
         connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
+
+        employee_providers = [
+            'Cathleen DiMaria',
+            'Christine Veneziale',
+            'Jacqui Maxwell',
+            'Jessica Trudeau',
+            'Kaitlin Konopka',
+            'Kristie Girten',
+            'Nicole Morrison', 
+            'Roseanna Vellner',
+            'Terri Ahern'
+        ]
         
         query = f"""
             SELECT *
             FROM ClinicalUtilizationTracker
         """
-        conditions = []
-        if provider:
-            conditions.append(f"""Provider = '{provider}'""")
-        if client:
-            conditions.append(f"""Client = '{client}'""")
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
-
-        query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
-
-        data = pd.read_sql_query(query, engine)
 
         ins_query = f"""
             SELECT *
             FROM InsuranceClinicalUtil
         """
-        if conditions:
-            ins_query += " WHERE " + " AND ".join(conditions)
+
+        if company_role == 'Employee':
+            query += f"""WHERE Provider IN ({', '.join([f"'{p}'" for p in employee_providers])})"""
+            ins_query += f"""WHERE Provider IN ({', '.join([f"'{p}'" for p in employee_providers])})"""
+        else:
+            query += f"""WHERE Provider = 'Nicole Morrison'"""
+            ins_query += f"""WHERE Provider = 'Nicole Morrison'"""
+
+        query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
+
+        data = pd.read_sql_query(query, engine)
 
         ins_query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
 
@@ -90,22 +100,25 @@ def generate_util_tracker(start_date, end_date, provider, client):
 
         general_indirect_kw = ['Indirect']
 
-        def categorize_service(desc):
-            if pd.isnull(desc) or desc == '':
+        def categorize_service(row):
+            if row['Status'] == 'Cancelled':
+                return 'Cancelled', row['SchedulingCancelledReason'] if pd.notnull(row['SchedulingCancelledReason']) else 'No Reason Provided'
+
+            if pd.isnull(row['ServiceCodeDescription']) or row['ServiceCodeDescription'] == '':
                 return 'Undefined', 'Undefined'
 
             for subcategory, keywords in indirect_categories.items():
-                if any(keyword in desc for keyword in keywords):
+                if any(keyword in row['ServiceCodeDescription'] for keyword in keywords):
                     return 'Indirect', subcategory
 
-            if any(keyword in desc for keyword in general_indirect_kw):
+            if any(keyword in row['ServiceCodeDescription'] for keyword in general_indirect_kw):
                 return 'Indirect', 'Indirect Time'
 
             return 'Direct', 'Direct Time'
         
         if not data.empty:
-            data[['Category', 'Subcategory']] = data['ServiceCodeDescription'].apply(
-                lambda desc: pd.Series(categorize_service(desc))
+            data[['Category', 'Subcategory']] = data.apply(
+                lambda row: pd.Series(categorize_service(row)), axis=1
             )
 
             data['SchedulingCancelledReason'] = data['SchedulingCancelledReason'].replace('', np.nan)
@@ -113,10 +126,10 @@ def generate_util_tracker(start_date, end_date, provider, client):
             data = calculate_cancellation_percentage(data)
 
         if not ins_data.empty:
-            ins_data[['Category', 'Subcategory']] = ins_data['ServiceCodeDescription'].apply(
-                lambda desc: pd.Series(categorize_service(desc))
+            ins_data[['Category', 'Subcategory']] = ins_data.apply(
+                lambda row: pd.Series(categorize_service(row)), axis=1
             )
-        
+
             ins_data['SchedulingCancelledReason'] = ins_data['SchedulingCancelledReason'].replace('', np.nan)
             ins_data = calculate_completion_percentage(ins_data)
             ins_data = calculate_cancellation_percentage(ins_data)

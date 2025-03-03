@@ -713,18 +713,12 @@ def handle_generate_clinical_util_report():
         data = request.get_json()
         start_date = data.get('start_date')
         end_date = data.get('end_date')
-        provider = data.get('provider')
-        client = data.get('client')
+        company_role = data.get('company_role')
 
-        if provider:
-            file_name = f"Clinical_Util_Tracker_'{provider}'_'{start_date}'-'{end_date}'.xlsx"
-        elif client:
-            file_name = f"Clinical_Util_Tracker_'{client}'_'{start_date}'-'{end_date}'.xlsx"
-        else:
-            file_name = f"Clinical_Util_Tracker_'{start_date}'-'{end_date}'.xlsx"
+        file_name = f"Clinical_Util_Tracker_'{company_role}'_'{start_date}'-'{end_date}'.xlsx"
 
         try:
-            report_file = generate_util_tracker(start_date, end_date, provider, client)
+            report_file = generate_util_tracker(start_date, end_date, company_role)
             return send_file(
                 report_file,
                 as_attachment=True,
