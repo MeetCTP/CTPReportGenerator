@@ -70,7 +70,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                         df[col] = df[col].astype('object')
 
             mile_diffs, et_virtual, cr_mileage, et_mileage = find_mileage_discrepancies(et_data, appointment_match_data)
-            time_diffs, missing_from = find_time_discrepancies(et_data, appointment_match_data, et_virtual)
+            time_diffs, missing_from, status_diffs = find_time_discrepancies(et_data, appointment_match_data, et_virtual)
             high_miles, high_times = find_high_mileage(cr_mileage, et_mileage)
             
             appointment_match_data.drop_duplicates(inplace=True)
@@ -80,7 +80,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
             with ExcelWriter(output_file, engine='openpyxl') as writer:
                 appointment_match_data.to_excel(writer, sheet_name="CR Data", index=False)
                 et_data.to_excel(writer, sheet_name="ET Data", index=False)
-                #duplicates.to_excel(writer, sheet_name="Exact Matches", index=False)
+                status_diffs.to_excel(writer, sheet_name="Status Discrepancies", index=False)
                 mile_diffs.to_excel(writer, sheet_name="Mileage Discrepancies", index=False)
                 high_miles.to_excel(writer, sheet_name="Mileage over 60", index=False)
                 high_times.to_excel(writer, sheet_name="Over 60 minute Drive Time", index=False)
@@ -145,7 +145,7 @@ def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
         ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'BillingCode', 'ServiceDate', 'StartTime', 'EndTime', 'Status', 'CancellationReason']
     ]
     aligned_et_data = et_virtual[
-        ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'ServiceDate', 'StartTime', 'EndTime', 'Status']
+        ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'ServiceDate', 'StartTime', 'EndTime', 'Status', 'Type']
     ]
     
     """for df in [aligned_match_data, aligned_et_data]:
@@ -169,8 +169,10 @@ def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
     time_differences = find_time_diffs(aligned_match_data, aligned_et_data)
 
     missing_from = find_missing_from(aligned_match_data, aligned_et_data, time_differences)
+
+    status_diffs = find_status_diffs(aligned_match_data, aligned_et_data, missing_from)
     
-    return time_differences, missing_from
+    return time_differences, missing_from, status_diffs
 
 def find_high_mileage(cr_data, et_data):
     cr_data = cr_data[
@@ -371,6 +373,12 @@ def find_overlapping_appointments(cr_copy, et_copy):
     overlap_df["EndTime_ET"] = pd.to_datetime(overlap_df["EndTime_ET"], format='%H:%M').dt.strftime('%I:%M%p').astype('object')
     
     return overlap_df
+
+def find_status_diffs(cr_copy, et_copy, missing_from):
+    #missing_from['StartTime'] = missing_from['StartTime_CR']
+    merged = pd.merge(cr_copy, et_copy, on=['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'ServiceDate', 'StartTime', 'EndTime'], how='inner', suffixes=('_CR', '_ET'))
+    status_diffs = merged[merged['Status_CR'] != merged['Status_ET']]
+    return status_diffs
 
 """
 CODE TO DISPLAY DATATYPES FOR TYPE MATCHING FOR DEBUGGING
