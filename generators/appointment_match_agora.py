@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
 from pandas import ExcelWriter
+from fuzzywuzzy import fuzz
+import re
 import pymssql
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -70,7 +72,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                         df[col] = df[col].astype('object')
 
             mile_diffs, et_virtual, cr_mileage, et_mileage = find_mileage_discrepancies(et_data, appointment_match_data)
-            time_diffs, missing_from, status_diffs = find_time_discrepancies(et_data, appointment_match_data, et_virtual)
+            time_diffs, missing_from, status_diffs, type_diffs = find_time_discrepancies(et_data, appointment_match_data, et_virtual)
             high_miles, high_times = find_high_mileage(cr_mileage, et_mileage)
             
             appointment_match_data.drop_duplicates(inplace=True)
@@ -86,7 +88,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                 high_times.to_excel(writer, sheet_name="Over 60 minute Drive Time", index=False)
                 time_diffs.to_excel(writer, sheet_name="Time Discrepancies", index=False)
                 missing_from.to_excel(writer, sheet_name="Missing From", index=False)
-                #start_time_diffs.to_excel(writer, sheet_name='StartTimeDiffs', index=False)
+                type_diffs.to_excel(writer, sheet_name='Type Discrepancies', index=False)
                 #end_time_diffs.to_excel(writer, sheet_name='EndTimeDiffs', index=False)
 
             output_file.seek(0)
@@ -142,7 +144,7 @@ def find_mileage_discrepancies(et_data, cr_data):
 
 def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
     aligned_match_data = appointment_match_data[
-        ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'BillingCode', 'ServiceDate', 'StartTime', 'EndTime', 'Status', 'CancellationReason']
+        ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'BillingCode', 'BillingDesc', 'ServiceDate', 'StartTime', 'EndTime', 'Status', 'CancellationReason']
     ]
     aligned_et_data = et_virtual[
         ['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'ServiceDate', 'StartTime', 'EndTime', 'Status', 'Type']
@@ -171,8 +173,10 @@ def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
     missing_from = find_missing_from(aligned_match_data, aligned_et_data, time_differences)
 
     status_diffs = find_status_diffs(aligned_match_data, aligned_et_data, missing_from)
+
+    type_diffs = find_type_diffs(aligned_match_data, aligned_et_data)
     
-    return time_differences, missing_from, status_diffs
+    return time_differences, missing_from, status_diffs, type_diffs
 
 def find_high_mileage(cr_data, et_data):
     cr_data = cr_data[
@@ -379,6 +383,46 @@ def find_status_diffs(cr_copy, et_copy, missing_from):
     merged = pd.merge(cr_copy, et_copy, on=['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'ServiceDate', 'StartTime', 'EndTime'], how='inner', suffixes=('_CR', '_ET'))
     status_diffs = merged[merged['Status_CR'] != merged['Status_ET']]
     return status_diffs
+
+category_keywords = {
+    'Direct': ['face to face', 'in-person', 'scheduled', 'one-on-one'],
+    'Direct: Make-Up Session': ['make-up session', 'make up session', 'rescheduled session', 'make-up'],
+    'Direct: Virtual': ['virtual', 'online session', 'remote session', 'telehealth'],
+    'Direct: Virtual Make-Up Session': ['virtual make up session', 'virtual make up'],
+    'Indirect': ['indirect', 'review', 'progress report', 'school', 'personnel', 'IEP', 'Meeting']
+}
+
+def find_type_diffs(cr_copy, et_copy):
+    cr_converted = cr_copy[cr_copy['Status'] == 'Converted']
+    et_converted = et_copy[et_copy['Status'] == 'Converted']
+
+    type_diffs = pd.merge(cr_converted, et_converted, on=['Provider', 'StudentFirstName', 'StudentLastName', 'ServiceDate', 'StartTime', 'EndTime'], how="inner", suffixes=('_CR', '_ET'))
+
+    type_values = ['Direct', 'Direct: Make-Up Session', 'Direct: Virtual', 'Direct: Virtual Make-Up Session', 'Indirect']
+
+    type_diffs['MatchedType_CR'] = type_diffs['BillingDesc'].apply(find_matching_type, args=(category_keywords, type_values))
+
+    discrepancies = type_diffs[type_diffs['Type'] != type_diffs['MatchedType_CR']]
+
+    return discrepancies
+
+def find_matching_type(billing_desc, type_keywords, type_values):
+        billing_desc = str(billing_desc).lower()  # Normalize case for comparison
+        
+        # First check if the billing description matches any keyword categories
+        for appointment_type, keywords in type_keywords.items():
+            if any(re.search(r'\b' + re.escape(keyword) + r'\b', billing_desc) for keyword in keywords):
+                return appointment_type
+            
+        best_match_type = None
+        highest_score = 0
+        for type_value in type_values:
+            score = fuzz.ratio(billing_desc, type_value.lower())
+            if score > highest_score:
+                highest_score = score
+                best_match_type = type_value
+        
+        return best_match_type if highest_score > 50 else None  # Adjust threshold as needed
 
 """
 CODE TO DISPLAY DATATYPES FOR TYPE MATCHING FOR DEBUGGING
