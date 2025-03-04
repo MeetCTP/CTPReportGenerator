@@ -15,11 +15,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const startDate = roleForm.elements['start_date'].value;
         const endDate = roleForm.elements['end_date'].value;
 
-        if (selectedRoles.length === 0) {
-            alert('Please select at least one company role.');
-            return;
-        }
-
         if (!startDate || !endDate) {
             alert('Please select a valid date range.');
             return;

@@ -25,8 +25,10 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
             SELECT DISTINCT
                 *
             FROM FortyEightHourReportView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{start_date_str}' AND '{end_date_str}') AND (CompanyRole IN ({', '.join([f"'{s}'" for s in company_roles])}));
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{start_date_str}' AND '{end_date_str}');
         """
+        if company_roles:
+            query += f""" AND (CompanyRole IN ({', '.join([f"'{s}'" for s in company_roles])}))"""
         data = pd.read_sql_query(query, engine)
 
         data['ServiceDate'] = pd.to_datetime(data['ServiceDate'], errors='coerce')
