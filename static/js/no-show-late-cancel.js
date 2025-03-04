@@ -42,6 +42,9 @@ function generateReport() {
         school: school
     });
 
+    const schoolSplit = school.split(': ')
+    const schoolName = schoolSplit[1]
+
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/report-generator/no-show-late-cancel/generate-report', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -54,7 +57,7 @@ function generateReport() {
                 var url = window.URL.createObjectURL(blob);
                 var a = document.createElement('a');
                 a.href = url;
-                a.download = 'No_Show_Late_Cancel_Report.xlsx';
+                a.download = `No_Show_Late_Cancel_Report_${schoolName}.xlsx`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
