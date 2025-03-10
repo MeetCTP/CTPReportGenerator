@@ -25,7 +25,7 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
             SELECT DISTINCT
                 *
             FROM FortyEightHourReportView
-            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{start_date_str}' AND '{end_date_str}');
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{start_date_str}' AND '{end_date_str}')
         """
         if company_roles:
             query += f""" AND (CompanyRole IN ({', '.join([f"'{s}'" for s in company_roles])}))"""
