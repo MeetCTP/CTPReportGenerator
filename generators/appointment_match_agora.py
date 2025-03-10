@@ -72,7 +72,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                         df[col] = df[col].astype('object')
 
             mile_diffs, et_virtual, cr_mileage, et_mileage = find_mileage_discrepancies(et_data, appointment_match_data)
-            time_diffs, missing_from, status_diffs, type_diffs = find_time_discrepancies(et_data, appointment_match_data, et_virtual)
+            time_diffs, missing_from, status_diffs = find_time_discrepancies(et_data, appointment_match_data, et_virtual)
             high_miles, high_times = find_high_mileage(cr_mileage, et_mileage)
             
             appointment_match_data.drop_duplicates(inplace=True)
@@ -88,7 +88,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                 high_times.to_excel(writer, sheet_name="Over 60 minute Drive Time", index=False)
                 time_diffs.to_excel(writer, sheet_name="Time Discrepancies", index=False)
                 missing_from.to_excel(writer, sheet_name="Missing From", index=False)
-                type_diffs.to_excel(writer, sheet_name='Type Discrepancies', index=False)
+                #type_diffs.to_excel(writer, sheet_name='Type Discrepancies', index=False)
                 #end_time_diffs.to_excel(writer, sheet_name='EndTimeDiffs', index=False)
 
             output_file.seek(0)
@@ -174,9 +174,15 @@ def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
 
     status_diffs = find_status_diffs(aligned_match_data, aligned_et_data, missing_from)
 
-    type_diffs = find_type_diffs(aligned_match_data, aligned_et_data)
+    missing_from = merged_df = pd.merge(missing_from, status_diffs, on=["Provider", "StudentFirstName", "StudentLastName", "ServiceDate", "EndTime"], how="left", indicator=True, suffixes=("_CR", "_ET"))
     
-    return time_differences, missing_from, status_diffs, type_diffs
+    missing_from = missing_from[merged_df['_merge'] == 'left_only']
+
+    missing_from.drop(columns=['_merge', 'Type', 'Status_ET', 'CancellationReason', 'Status_CR', 'StartTime', 'BillingDesc', 'StudentCode_ET', 'BillingCode'], inplace=True)
+
+    #type_diffs = find_type_diffs(aligned_match_data, aligned_et_data)
+    
+    return time_differences, missing_from, status_diffs
 
 def find_high_mileage(cr_data, et_data):
     cr_data = cr_data[
