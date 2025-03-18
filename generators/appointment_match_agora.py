@@ -52,6 +52,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
             et_data['StudentCode'] = et_data['StudentCode'].astype('object')
             et_data['StartTime'] = pd.to_datetime(et_data['StartTime'], format='%H:%M:%S').dt.strftime('%I:%M%p').astype('object')
             et_data['EndTime'] = pd.to_datetime(et_data['EndTime'], format='%H:%M:%S').dt.strftime('%I:%M%p').astype('object')
+            et_data['DateTimeSigned'] = pd.to_datetime(et_data['DateTimeSigned'], format='%m/%d/%Y %I:%M:%S %p')
             
             et_data = pd.merge(et_data, appointment_match_data[['Provider', 'EmploymentType']], 
                         on='Provider', how='left')
@@ -70,6 +71,8 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                         df[col] = df[col].str.replace(r'\s*(JR\.|SR\.|III|II|IV)\s*$', '', regex=True)
                         df[col] = df[col].str.replace('-', ' ', regex=False)
                         df[col] = df[col].astype('object')
+                        
+            et_data = et_data.loc[et_data.groupby(['Provider', 'Student', 'ServiceDate', 'StartTime', 'EndTime'])['DateTimeSigned'].idxmax()]
 
             mile_diffs, et_virtual, cr_mileage, et_mileage = find_mileage_discrepancies(et_data, appointment_match_data)
             time_diffs, missing_from, status_diffs = find_time_discrepancies(et_data, appointment_match_data, et_virtual)
@@ -181,6 +184,8 @@ def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
     missing_from.drop(columns=['_merge', 'Type', 'Status_ET', 'CancellationReason', 'Status_CR', 'StartTime', 'BillingDesc', 'StudentCode_ET', 'BillingCode'], inplace=True)
 
     #type_diffs = find_type_diffs(aligned_match_data, aligned_et_data)
+
+    time_differences = time_differences.style.applymap(highlight_diff_type_cells, subset=['DiscrepancyType'])
     
     return time_differences, missing_from, status_diffs
 
@@ -277,6 +282,14 @@ def find_time_diffs(cr_copy, et_copy):
 
     discrepancy_df = pd.merge(discrepancy_df, overlapping_times, on=['Provider', 'StudentFirstName', 'StudentLastName', 'ServiceDate', 'Status', 'StartTime_CR', 'EndTime_CR', 'StartTime_ET', 'EndTime_ET'], how='outer')
 
+    discrepancy_df['DiscrepancyType'] = np.where(
+        discrepancy_df['StartTime_CR'] == discrepancy_df['StartTime_ET'], "Time(End)", 
+        np.where(
+            discrepancy_df['EndTime_CR'] == discrepancy_df['EndTime_ET'], "Time(Start)", 
+            "Overlapping"
+        )
+    )
+
     discrepancy_df['BillingCode'] = discrepancy_df['BillingCode_x'].fillna(discrepancy_df['BillingCode_y'])
     discrepancy_df['StudentCode'] = discrepancy_df['StudentCode'].fillna(discrepancy_df['StudentCode_CR']).fillna(discrepancy_df['StudentCode_ET'])
     discrepancy_df['CancellationReason'] = discrepancy_df['CancellationReason_x'].fillna(discrepancy_df['CancellationReason_y'])
@@ -284,7 +297,7 @@ def find_time_diffs(cr_copy, et_copy):
     discrepancy_df.drop(columns=['BillingCode_x', 'BillingCode_y', 'CancellationReason_x', 'StudentCode_CR', 'StudentCode_ET', 'CancellationReason_y'], inplace=True)
 
     discrepancy_df = discrepancy_df[["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "BillingCode", "ServiceDate", 'Status', 'CancellationReason', 
-                         "StartTime_CR", "StartTime_ET", "EndTime_CR", "EndTime_ET"]]
+                     "StartTime_CR", "StartTime_ET", "EndTime_CR", "EndTime_ET", "DiscrepancyType"]]
     
     #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
@@ -389,6 +402,16 @@ def find_status_diffs(cr_copy, et_copy, missing_from):
     merged = pd.merge(cr_copy, et_copy, on=['Provider', 'StudentFirstName', 'StudentLastName', 'StudentCode', 'ServiceDate', 'StartTime', 'EndTime'], how='inner', suffixes=('_CR', '_ET'))
     status_diffs = merged[merged['Status_CR'] != merged['Status_ET']]
     return status_diffs
+
+def highlight_diff_type_cells(val):
+    if val == 'Time(Start)':
+        return 'background-color: #99ff99'
+    elif val == 'Time(End)':
+        return 'background-color: #9999ff'
+    elif val == 'Overlapping':
+        return 'background-color: #ff9999'
+    else:
+        return ''
 
 category_keywords = {
     'Direct': ['face to face', 'in-person', 'scheduled', 'one-on-one'],
