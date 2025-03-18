@@ -786,3 +786,28 @@ def handle_generate_monthly_active_users_report():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415
+    
+@app.route('/airtable-test')
+def airtable_test_page():
+    from pyairtable import Api
+    api = Api('patpaS7kXYs546WpG.cc10e36e0d622e8e5b8d1be51a6b27eaabb16b2ce3cd8009157bc4cef04c7783')
+    table = api.table('appGL58BLgeQts6DX', 'tblxVfcrGegYqz8KY')
+    
+    # Fetching all records from the table
+    records = table.all()
+
+    # Creating a list to hold the record data
+    record_data = []
+    
+    for record in records:
+        record_data.append({
+            'id': record['id'],
+            'name': record['fields'].get('Name', 'N/A'),  # Replace 'Name' with the actual field name
+            'position': record['fields'].get('Position', 'N/A')  # Replace 'Position' if needed
+        })
+
+    # Convert to Pandas DataFrame (optional)
+    df = pd.DataFrame(record_data)
+
+    # Pass the record data to the template
+    return render_template('airtable-test.html', records=record_data)
