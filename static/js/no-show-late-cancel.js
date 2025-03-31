@@ -1,6 +1,22 @@
 document.addEventListener('DOMContentLoaded', function () {
     var generateButton = document.getElementById('generate');
-    if (generateButton) {
+    var schoolSelect = document.getElementById('school');
+
+    // Handle the display of the select dropdown based on radio button selection
+    var radioButtons = document.querySelectorAll('input[name="reportType"]');
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', function () {
+            if (document.getElementById('select').checked) {
+                // Show the select dropdown if 'select' is chosen
+                schoolSelect.style.display = 'block';
+            } else {
+                // Hide the select dropdown if anything else is selected
+                schoolSelect.style.display = 'none';
+            }
+        });
+    });
+
+        if (generateButton) {
         generateButton.addEventListener('click', async function () {
             // Check which radio button is selected
             var reportType = document.querySelector('input[name="reportType"]:checked').value;
@@ -8,7 +24,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if (reportType === 'multiple') {
                 // If 'multiple' is selected, generate separate reports for each school
                 await generateReportsForAllSchools();
-            } else {
+            }
+            else if (reportType === 'select') {
+                // If 'select' is selected, generate a single report for the school that was selected
+                await generateReportForSelectSchool();
+            }
+            else {
                 // If 'single' is selected, generate one combined report for all schools
                 await generateSingleReport();
             }
@@ -103,6 +124,57 @@ function generateReportForSchool(school, app_start, app_end, provider, client, f
         console.log('Generating report for school:', school);
         xhr.send(jsonData);
     });
+}
+
+async function generateReportForSelectSchool() {
+    var form = document.getElementById('report-form');
+    var formData = new FormData(form);
+
+    var app_start = formData.get('app-start');
+    var app_end = formData.get('app-end');
+    var provider = formData.get('provider');
+    var client = formData.get('client');
+    var selectedSchool = formData.get('school'); // Get selected school from the dropdown
+
+    var jsonData = JSON.stringify({
+        app_start: app_start,
+        app_end: app_end,
+        provider: provider,
+        client: client,
+        school: selectedSchool,
+        single: 0
+    });
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/report-generator/no-show-late-cancel/generate-report', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.responseType = 'blob';
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                var blob = new Blob([xhr.response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = selectedSchool.replace(/[^a-zA-Z0-9]/g, '_') + '_No_Show_Late_Cancel_Report.xlsx'; // Ensure file name is valid
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                console.log('Report generated and downloaded for:', selectedSchool);
+            } else {
+                var reader = new FileReader();
+                reader.onload = function () {
+                    var errorMessage = reader.result;
+                    console.error('Error generating report for selected school:', errorMessage);
+                };
+                reader.readAsText(xhr.response);
+            }
+        }
+    };
+
+    console.log('Generating report for selected school:', selectedSchool);
+    xhr.send(jsonData);
 }
 
 async function generateSingleReport() {
