@@ -1,30 +1,22 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     var generateButton = document.getElementById('generate');
     if (generateButton) {
-        generateButton.addEventListener('click', function() {
-            generateReport();
+        generateButton.addEventListener('click', async function () {
+            // Check which radio button is selected
+            var reportType = document.querySelector('input[name="reportType"]:checked').value;
+
+            if (reportType === 'multiple') {
+                // If 'multiple' is selected, generate separate reports for each school
+                await generateReportsForAllSchools();
+            } else {
+                // If 'single' is selected, generate one combined report for all schools
+                await generateSingleReport();
+            }
         });
     }
 });
 
-function generateReport() {
-    var messageDiv = document.getElementById('loading-message');
-    if (!messageDiv) {
-        messageDiv = document.createElement('div');
-        messageDiv.id = 'loading-message';
-        messageDiv.style.position = 'fixed';
-        messageDiv.style.top = '50%';
-        messageDiv.style.left = '50%';
-        messageDiv.style.transform = 'translate(-50%, -50%)';
-        messageDiv.style.padding = '20px';
-        messageDiv.style.backgroundColor = '#666';
-        messageDiv.style.border = '1px solid #ccc';
-        messageDiv.style.zIndex = '1000';
-        messageDiv.style.textAlign = 'center';
-        messageDiv.innerHTML = '<p>Generating the report, please be patient. This might take a few minutes...</p>';
-        document.body.appendChild(messageDiv);
-    }
-
+async function generateReportsForAllSchools() {
     var form = document.getElementById('report-form');
     var formData = new FormData(form);
 
@@ -32,18 +24,122 @@ function generateReport() {
     var app_end = formData.get('app-end');
     var provider = formData.get('provider');
     var client = formData.get('client');
-    var school = formData.get('school');
+
+    var schools = [
+        'School: Agora Cyber',
+        'School: Commonwealth Charter Academy',
+        'School: Achievement House Cyber Charter School',
+        'School: Elwyn',
+        'School: PA Distance Learning Charter',
+        'School: Insight',
+        'School: Reach Cyber',
+        'School: PA Virtual Charter',
+        'School: PA Leadership Charter School',
+        'School: Delaware Co Intermediate Unit',
+        'School: Central PA Digital Learning Foundation',
+        'School: PA Cyber',
+        'School: Gettysburg Montessori Charter'
+    ];
+
+    // Loop through each school, but wait for the report for one school to finish before moving to the next
+    for (let school of schools) {
+        await generateReportForSchool(school, app_start, app_end, provider, client, formData); // Wait for each school before moving to the next
+    }
+}
+
+function generateReportForSchool(school, app_start, app_end, provider, client, formData) {
+    return new Promise((resolve, reject) => {
+        formData.set('school', school);  // Set the school dynamically
+
+        var jsonData = JSON.stringify({
+            app_start: app_start,
+            app_end: app_end,
+            provider: provider,
+            client: client,
+            school: school,
+            single: 0
+        });
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/report-generator/no-show-late-cancel/generate-report', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.responseType = 'blob';
+
+        xhr.onreadystatechange = function () {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+        if (xhr.status === 200) {
+            // Check if the response contains content
+            if (xhr.response) {
+                var blob = new Blob([xhr.response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+                // Log the response content for debugging
+                console.log("Received blob:", blob);
+
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = school.replace(/[^a-zA-Z0-9]/g, '_') + '_No_Show_Late_Cancel_Report.xlsx'; // Ensure file name is valid
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                console.log('Report generated and downloaded for:', school);
+                resolve(); // Resolve the promise once the report is downloaded
+            } else {
+                console.error("Received empty response or no data from the server.");
+                reject(new Error('No data received from the server'));
+            }
+        } else {
+            var reader = new FileReader();
+            reader.onload = function () {
+                var errorMessage = reader.result;
+                console.error('Error generating report for', school, ':', errorMessage);
+                reject(new Error('Error generating report for ' + school));
+            };
+            reader.readAsText(xhr.response);
+        }
+    }
+};
+
+        console.log('Generating report for school:', school);
+        xhr.send(jsonData);
+    });
+}
+
+async function generateSingleReport() {
+    var form = document.getElementById('report-form');
+    var formData = new FormData(form);
+
+    var app_start = formData.get('app-start');
+    var app_end = formData.get('app-end');
+    var provider = formData.get('provider');
+    var client = formData.get('client');
+
+    var schools = [
+        'School: Agora Cyber',
+        'School: Commonwealth Charter Academy',
+        'School: Achievement House Cyber Charter School',
+        'School: Elwyn',
+        'School: PA Distance Learning Charter',
+        'School: Insight',
+        'School: Reach Cyber',
+        'School: PA Virtual Charter',
+        'School: PA Leadership Charter School',
+        'School: Delaware Co Intermediate Unit',
+        'School: Central PA Digital Learning Foundation',
+        'School: PA Cyber',
+        'School: Gettysburg Montessori Charter'
+    ];
+
+    var combinedSchools = schools.join(', ');
 
     var jsonData = JSON.stringify({
         app_start: app_start,
         app_end: app_end,
         provider: provider,
         client: client,
-        school: school
+        school: combinedSchools,
+        single: 1
     });
-
-    const schoolSplit = school.split(': ')
-    const schoolName = schoolSplit[1]
 
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/report-generator/no-show-late-cancel/generate-report', true);
@@ -57,16 +153,16 @@ function generateReport() {
                 var url = window.URL.createObjectURL(blob);
                 var a = document.createElement('a');
                 a.href = url;
-                a.download = `No_Show_Late_Cancel_Report_${schoolName}.xlsx`;
+                a.download = 'No_Show_Late_Cancel_Report_For_All_Schools.xlsx';
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
-                messageDiv.style.display = 'none';
+                console.log('Single report generated and downloaded.');
             } else {
                 var reader = new FileReader();
                 reader.onload = function () {
                     var errorMessage = reader.result;
-                    console.error('Error generating report:', errorMessage);
+                    console.error('Error generating single report:', errorMessage);
                 };
                 reader.readAsText(xhr.response);
             }

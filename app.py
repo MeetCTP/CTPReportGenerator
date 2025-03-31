@@ -9,6 +9,7 @@ from generators.appointment_match_insight import generate_appointment_insight_re
 from generators.active_contacts_report import generate_active_contacts_report
 from generators.late_conversions_report import generate_late_conversions_report
 from generators.no_show_late_cancel_report import generate_no_show_late_cancel_report
+from generators.no_show_late_cancel_report import generate_no_show_late_cancel_report_single
 from generators.provider_sessions_report import generate_provider_sessions_report
 from generators.provider_connections_report import generate_provider_connections_report
 from generators.forty_eight_conversions import generate_unconverted_time_report
@@ -560,10 +561,11 @@ def handle_generate_no_show_late_cancel_report():
         school = data['school']
 
         try:
-            # Call your Python function to generate the report
-            excel_file = generate_no_show_late_cancel_report(app_start, app_end, provider, client, school)
-
-            # Return the Excel file as a download to the browser
+            if data['single'] != 1:
+                excel_file = generate_no_show_late_cancel_report(app_start, app_end, provider, client, school)
+            else:
+                excel_file = generate_no_show_late_cancel_report_single(app_start, app_end, provider, client, school)
+            
             return send_file(
                 excel_file,
                 as_attachment=True,

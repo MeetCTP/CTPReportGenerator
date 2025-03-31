@@ -18,36 +18,21 @@
             <form id="report-form">
                 <label for="app-start">App Start Date:</label>
                 <input type="date" id="app-start" name="app-start" required>
-                <label for="app-end">App End Date:</label>
+                <label for="app-end">App End Date (+1 day):</label>
                 <input type="date" id="app-end" name="app-end" required>
                 <label for="provider">Provider Name:</label>
                 <input type="text" id="provider" name="provider">
                 <label for="client">Client Name:</label>
                 <input type="text" id="client" name="client">
-                <label for="school">School:</label>
-                <select id="school" name="school">
-                    <option value="">Select Schools</option>
-                    <option value="School: Agora Cyber">School: Agora Cyber</option>
-                    <option value="School: Commonwealth Charter Academy">School: Commonwealth Charter Academy</option>
-                    <option value="School: Achievement House Cyber Charter School">School: Achievement House Cyber Charter School</option>
-                    <option value="School: Elwyn">School: Elwyn</option>
-                    <option value="School: PA Distance Learning Charter">School: PA Distance Learning Charter</option>
-                    <option value="School: Insight">School: Insight</option>
-                    <option value="School: Reach Cyber">School: Reach Cyber</option>
-                    <option value="School: PA Virtual Charter">School: PA Virtual Charter</option>
-                    <option value="School: PA Leadership Charter School">School: PA Leadership Charter School</option>
-                    <option value="School: Delaware Co Intermediate Unit">School: Delaware Co Intermediate Unit</option>
-                    <option value="School: Central PA Digital Learning Foundation">School: Central PA Digital Learning Foundation</option>
-                    <option value="School: Methaction">School: Methaction</option>
-                    <option value="School: PA Cyber">School: PA Cyber</option>
-                    <option value="School: Gettysburg Montessori Charter">School: Gettysburg Montessori Charter</option>
-                    <option value="School: Private">School: Private</option>
-                    <option value="School: North Penn District">School: North Penn District</option>
-                    <option value="School: Daniel Boone District">School: Daniel Boone District</option>
-                    <option value="School: Hatboro-Horsham District">School: Hatboro-Horsham District</option>
-                    <option value="School: Radnor District">School: Radnor District</option>
-                    <option value="School: Lower Moreland Township District">School: Lower Moreland Township District</option>
-                </select>
+                <label>Report Type</label>
+                <div>
+                    <input class="school-choice-btns" type="radio" id="single" name="reportType" value="single" />
+                    <label for="single">Single (single report for all schools)</label>
+                </div>
+                <div>
+                    <input class="school-choice-btns" type="radio" id="multiple" name="reportType" value="multiple" />
+                    <label for="multiple">Multiple (separate reports for each school)</label>
+                </div>
                 <button id="generate" type="button">Generate Report</button>
             </form>
         </div>
