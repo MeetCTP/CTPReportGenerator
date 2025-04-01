@@ -20,8 +20,10 @@ from generators.util_tracker import calculate_cancellation_percentage
 from generators.certification_expiration import generate_cert_exp_report
 from generators.pad_indirect_time_report import generate_pad_indirect
 from generators.monthly_active_users_report import generate_monthly_active_users
+from generators.appt_overlap_pandas import generate_appt_overlap_report
 from generators.original_agora_report import generate_original_agora_report
 from generators.original_insight_report import generate_original_insight_report
+from generators.monthly_at_report import get_all_at_tables
 from generators.code_look_up import code_search
 from flask_cors import CORS
 from datetime import datetime
@@ -425,6 +427,10 @@ def monthly_active():
 def school_match():
     return render_template('school-match.html')
 
+@app.route('/report-generator/appt-overlap')
+def appt_overlap():
+    return render_template('appt-overlap.html')
+
 @app.route('/report-generator/school-matching/generate-report', methods=['POST'])
 def handle_generate_school_matching_report():
     start_date = request.form.get('start_date')
@@ -788,28 +794,40 @@ def handle_generate_monthly_active_users_report():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415
-    
+
 @app.route('/airtable-test')
+def render_airtable_page():
+    return render_template('airtable-test.html')
+
+@app.route('/airtable-test/generate-report', methods=["POST"])
 def airtable_test_page():
-    from pyairtable import Api
-    api = Api('patpaS7kXYs546WpG.cc10e36e0d622e8e5b8d1be51a6b27eaabb16b2ce3cd8009157bc4cef04c7783')
-    table = api.table('appGL58BLgeQts6DX', 'tblxVfcrGegYqz8KY')
-    
-    # Fetching all records from the table
-    records = table.all()
+    try:
+        report_file = get_all_at_tables()
+        return send_file(
+            report_file,
+            as_attachment=True,
+            download_name=f"All_Airtables.xlsx"
+        )
+    except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
-    # Creating a list to hold the record data
-    record_data = []
-    
-    for record in records:
-        record_data.append({
-            'id': record['id'],
-            'name': record['fields'].get('Name', 'N/A'),  # Replace 'Name' with the actual field name
-            'position': record['fields'].get('Position', 'N/A')  # Replace 'Position' if needed
-        })
-
-    # Convert to Pandas DataFrame (optional)
-    df = pd.DataFrame(record_data)
-
-    # Pass the record data to the template
-    return render_template('airtable-test.html', records=record_data)
+@app.route('/report-generator/appt-overlap/generate-report', methods=['POST'])
+def handle_generate_appt_overlap_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        provider = data.get('provider')
+        client = data.get('client')
+        
+        try:
+            report_file = generate_appt_overlap_report(start_date, end_date, provider, client)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=f"Overlapping_Appointment_Report_'{start_date}'-'{end_date}'.xlsx"
+            )
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
