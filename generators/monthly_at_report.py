@@ -45,13 +45,15 @@ def get_all_at_tables():
         paras = pd.DataFrame(paras_data)
         mobile = pd.DataFrame(mobile_data)
 
-        counselors_social = counselors_social.astype('object')
-        bcba_lbs = bcba_lbs.astype('object')
-        wilson = wilson.astype('object')
-        speech = speech.astype('object')
-        sped = sped.astype('object')
-        paras = paras.astype('object')
-        mobile = mobile.astype('object')
+        total_ncns = 0
+
+        total_ncns += count_ncns_in_interviews(counselors_social)
+        total_ncns += count_ncns_in_interviews(bcba_lbs)
+        total_ncns += count_ncns_in_interviews(wilson)
+        total_ncns += count_ncns_in_interviews(speech)
+        total_ncns += count_ncns_in_interviews(sped)
+        total_ncns += count_ncns_in_interviews(paras)
+        total_ncns += count_ncns_in_interviews(mobile)
 
         output_file = io.BytesIO()
         with ExcelWriter(output_file, engine='openpyxl') as writer:
@@ -69,20 +71,14 @@ def get_all_at_tables():
         print('Error occurred while generating the report: ', e)
         raise e
     
-def get_all_records(table):
-    records = []
-    page_size = 100  # Airtable's API default limit per request
-    offset = None
-
-    while True:
-        if offset:
-            records_page = table.all(offset=offset)
-        else:
-            records_page = table.all()
-
-        records.extend(records_page)
-        offset = records_page.get('offset', None)
-
-        if not offset:
-            break
-    return records
+def count_ncns_in_interviews(table):
+    # Step 1: Extract rows where "Interview Scheduled" has a value
+    interviews = table[table['Interview Scheduled'].notna()]
+    
+    # Step 2: Find the column name containing "Status" (whether it's 'Status' or 'Hiring Status')
+    status_column = [col for col in table.columns if 'Status' in col][0]  # Find the column with "Status"
+    
+    # Step 3: Filter interviews where the status contains "NCNS"
+    ncns_count = interviews[interviews[status_column].str.contains('NCNS', case=False, na=False)].shape[0]
+    
+    return ncns_count
