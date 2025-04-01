@@ -801,15 +801,22 @@ def render_airtable_page():
 
 @app.route('/airtable-test/generate-report', methods=["POST"])
 def airtable_test_page():
-    try:
-        report_file = get_all_at_tables()
-        return send_file(
-            report_file,
-            as_attachment=True,
-            download_name=f"All_Airtables.xlsx"
-        )
-    except Exception as e:
-            return jsonify({'error': str(e)}), 500
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        start_date = data['start_date']
+        end_date = data['end_date']
+
+        try:
+            report_file = get_all_at_tables(start_date, end_date)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=f"All_Airtables.xlsx"
+            )
+        except Exception as e:
+                return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
 
 @app.route('/report-generator/appt-overlap/generate-report', methods=['POST'])
 def handle_generate_appt_overlap_report():

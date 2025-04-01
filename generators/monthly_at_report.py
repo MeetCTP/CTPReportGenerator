@@ -4,7 +4,7 @@ from pandas import ExcelWriter
 import io
 
 
-def get_all_at_tables():
+def get_all_at_tables(start_date, end_date):
     try:
         # Setup Airtable API client
         api = Api('patpaS7kXYs546WpG.cc10e36e0d622e8e5b8d1be51a6b27eaabb16b2ce3cd8009157bc4cef04c7783')
@@ -48,12 +48,12 @@ def get_all_at_tables():
         total_ncns = 0
 
         total_ncns += count_ncns_in_interviews(counselors_social)
-        total_ncns += count_ncns_in_interviews(bcba_lbs)
-        total_ncns += count_ncns_in_interviews(wilson)
-        total_ncns += count_ncns_in_interviews(speech)
-        total_ncns += count_ncns_in_interviews(sped)
-        total_ncns += count_ncns_in_interviews(paras)
-        total_ncns += count_ncns_in_interviews(mobile)
+        #total_ncns += count_ncns_in_interviews(bcba_lbs)
+        #total_ncns += count_ncns_in_interviews(wilson)
+        #total_ncns += count_ncns_in_interviews(speech)
+        #total_ncns += count_ncns_in_interviews(sped)
+        #total_ncns += count_ncns_in_interviews(paras)
+        #total_ncns += count_ncns_in_interviews(mobile)
 
         output_file = io.BytesIO()
         with ExcelWriter(output_file, engine='openpyxl') as writer:

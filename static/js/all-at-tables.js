@@ -8,6 +8,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function generateReport() {
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+
+        if (!startDate || !endDate) {
+            alert("Please select both start and end dates.");
+            return;
+        }
+
+        const jsonData = JSON.stringify({
+            start_date: startDate,
+            end_date: endDate
+        });
+
         var xhr = new XMLHttpRequest();
         xhr.open('POST', '/airtable-test/generate-report', true);
         xhr.setRequestHeader('Content-Type', 'application/json');
@@ -24,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
-                    console.log("here too")
+                    console.log("Response Received")
                 } else {
                     var reader = new FileReader();
                     reader.onload = function () {
@@ -36,7 +49,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         };
 
-        console.log("got here")
-        xhr.send();
+        console.log("Request sent")
+        console.log(jsonData)
+        xhr.send(jsonData);
     }
 });
