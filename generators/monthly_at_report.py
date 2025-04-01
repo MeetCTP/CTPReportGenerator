@@ -17,55 +17,51 @@ def get_all_at_tables(start_date, end_date):
         paras_table = api.table('app5obuWU6q9BKfiL', 'tblWylyMP4shyRhpM')
         mobile_table = api.table('app27nPo3s0RmlPyW', 'tbl42Un3FVBkJGXpe')
 
-        # Connect to Airtable and get all records
-        counselors_social_records = counselors_social_table.all()
-        bcba_lbs_records = bcba_lbs_table.all()
-        wilson_records = wilson_table.all()
-        speech_records = speech_table.all()
-        sped_records = sped_table.all()
-        paras_records = paras_table.all()
-        mobile_records = mobile_table.all()
-
-        # Convert the Airtable data (list of dictionaries) to a pandas DataFrame
-        # Extract the 'fields' part of each record to get the actual data
-        counselors_social_data = [record['fields'] for record in counselors_social_records]
-        bcba_lbs_data = [record['fields'] for record in bcba_lbs_records]
-        wilson_data = [record['fields'] for record in wilson_records]
-        speech_data = [record['fields'] for record in speech_records]
-        sped_data = [record['fields'] for record in sped_records]
-        paras_data = [record['fields'] for record in paras_records]
-        mobile_data = [record['fields'] for record in mobile_records]
-
-        # Create a DataFrame from the data
-        counselors_social = pd.DataFrame(counselors_social_data)
-        bcba_lbs = pd.DataFrame(bcba_lbs_data)
-        wilson = pd.DataFrame(wilson_data)
-        speech = pd.DataFrame(speech_data)
-        sped = pd.DataFrame(sped_data)
-        paras = pd.DataFrame(paras_data)
-        mobile = pd.DataFrame(mobile_data)
-
+        tables = [
+            (counselors_social_table, "Counselors and Social Workers"),
+            (bcba_lbs_table, "BCBA and LBS"),
+            (wilson_table, "Wilson Reading Instructors"),
+            (speech_table, "Speech Therapists"),
+            (sped_table, "SPED Teachers and Tutors"),
+            (paras_table, "Paraprofessional"),
+            (mobile_table, "Mobile Therapist")
+        ]
         total_ncns = 0
-
-        total_ncns += count_ncns_in_interviews(counselors_social)
-        #total_ncns += count_ncns_in_interviews(bcba_lbs)
-        #total_ncns += count_ncns_in_interviews(wilson)
-        #total_ncns += count_ncns_in_interviews(speech)
-        #total_ncns += count_ncns_in_interviews(sped)
-        #total_ncns += count_ncns_in_interviews(paras)
-        #total_ncns += count_ncns_in_interviews(mobile)
+        total_interviews = 0
 
         output_file = io.BytesIO()
-        with ExcelWriter(output_file, engine='openpyxl') as writer:
-            counselors_social.to_excel(writer, sheet_name="Counselors and Social Workers", index=False)
-            bcba_lbs.to_excel(writer, sheet_name="BCBA and LBS", index=False)
-            wilson.to_excel(writer, sheet_name="Wilson Reading Instructors", index=False)
-            speech.to_excel(writer, sheet_name="Speech Therapists", index=False)
-            sped.to_excel(writer, sheet_name="SPED Teachers and Tutors", index=False)
-            paras.to_excel(writer, sheet_name="Paraprofessional", index=False)
-            mobile.to_excel(writer, sheet_name="Mobile Therapist", index=False)
 
+        # Create a new ExcelWriter object to write data to the output_file
+        with ExcelWriter(output_file, engine='openpyxl') as writer:
+            for table, sheet_name in tables:
+                # Get all records from Airtable
+                records = table.all()
+
+                # Convert records to a DataFrame
+                data = [record['fields'] for record in records]
+                df = pd.DataFrame(data)
+
+                # Count interviews and NCNS
+                row_count, ncns_count = count_ncns_in_interviews(df)
+
+                # Add to the totals
+                total_ncns += ncns_count
+                total_interviews += row_count
+
+                # Write the DataFrame to the Excel sheet with the corresponding sheet name
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            # Optional: You could also add a summary sheet with totals if you want
+            summary_df = pd.DataFrame({
+                'Total NCNS': [total_ncns],
+                'Total Interviews': [total_interviews]
+            })
+            summary_df.to_excel(writer, sheet_name="Summary", index=False)
+
+        # Ensure the file pointer is at the beginning of the file before returning
         output_file.seek(0)
+
+        # Return the output file as an attachment
         return output_file
     except Exception as e:
         print('Error occurred while generating the report: ', e)
@@ -74,6 +70,8 @@ def get_all_at_tables(start_date, end_date):
 def count_ncns_in_interviews(table):
     # Step 1: Extract rows where "Interview Scheduled" has a value
     interviews = table[table['Interview Scheduled'].notna()]
+
+    row_count = len(interviews)
     
     # Step 2: Find the column name containing "Status" (whether it's 'Status' or 'Hiring Status')
     status_column = [col for col in table.columns if 'Status' in col][0]  # Find the column with "Status"
@@ -81,4 +79,4 @@ def count_ncns_in_interviews(table):
     # Step 3: Filter interviews where the status contains "NCNS"
     ncns_count = interviews[interviews[status_column].str.contains('NCNS', case=False, na=False)].shape[0]
     
-    return ncns_count
+    return ncns_count, row_count
