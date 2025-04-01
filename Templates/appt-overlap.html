@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlapping Appointments Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/appt-overlap.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>Overlapping Appointments Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <label for="start-date">App Start Date:</label>
+                <input type="date" id="start-date" name="start-date" required>
+                <label for="end-date">App End Date:</label>
+                <input type="date" id="end-date" name="end-date" required>
+                <label for="provider">Provider Name:</label>
+                <input type="text" id="provider" name="provider">
+                <label for="client">Client Name:</label>
+                <input type="text" id="client" name="client">
+
+                <button id="generate" type="button">Generate Report</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
