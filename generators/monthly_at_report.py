@@ -6,6 +6,9 @@ import io
 
 def get_all_at_tables(start_date, end_date):
     try:
+        start_date = pd.to_datetime(start_date)
+        end_date = pd.to_datetime(end_date)
+        
         # Setup Airtable API client
         api = Api('patpaS7kXYs546WpG.cc10e36e0d622e8e5b8d1be51a6b27eaabb16b2ce3cd8009157bc4cef04c7783')
 
@@ -28,6 +31,11 @@ def get_all_at_tables(start_date, end_date):
         ]
         total_ncns = 0
         total_interviews = 0
+        
+        total_paras_ncns = 0
+        total_paras_interviews = 0
+        
+        completed_interviews = 0
 
         output_file = io.BytesIO()
 
@@ -40,21 +48,39 @@ def get_all_at_tables(start_date, end_date):
                 # Convert records to a DataFrame
                 data = [record['fields'] for record in records]
                 df = pd.DataFrame(data)
+                
+                df['Interview Scheduled'] = pd.to_datetime(df['Interview Scheduled'], errors='coerce')
+                
+                filtered_df = df[(df['Interview Scheduled'] >= pd.to_datetime(start_date)) & 
+                                 (df['Interview Scheduled'] <= pd.to_datetime(end_date))]
+
+                # If no records match the date range, skip this table
+                if filtered_df.empty:
+                    print(f"Skipping {sheet_name} as no data matches the date range.")
+                    continue
 
                 # Count interviews and NCNS
-                row_count, ncns_count = count_ncns_in_interviews(df)
+                ncns_count, row_count = count_ncns_in_interviews(filtered_df)
+                
+                if sheet_name == "Paraprofessional":
+                    total_paras_ncns += ncns_count
+                    total_paras_interviews += row_count
 
                 # Add to the totals
                 total_ncns += ncns_count
                 total_interviews += row_count
 
                 # Write the DataFrame to the Excel sheet with the corresponding sheet name
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                filtered_df.to_excel(writer, sheet_name=sheet_name, index=False)
 
             # Optional: You could also add a summary sheet with totals if you want
             summary_df = pd.DataFrame({
-                'Total NCNS': [total_ncns],
-                'Total Interviews': [total_interviews]
+                'Total # of NCNS': [total_ncns],
+                'Total # of Interviews': [total_interviews],
+                '% of NCNS': ["{:.2f}%".format(total_ncns / total_interviews * 100)],
+                'Total # of NCNS (Para)': [total_paras_ncns],
+                'Total # of Interviews (Para)': [total_paras_interviews],
+                '% of NCNS (Para)': ["{:.2f}%".format(total_paras_ncns / total_paras_interviews * 100)]
             })
             summary_df.to_excel(writer, sheet_name="Summary", index=False)
 
@@ -73,10 +99,7 @@ def count_ncns_in_interviews(table):
 
     row_count = len(interviews)
     
-    # Step 2: Find the column name containing "Status" (whether it's 'Status' or 'Hiring Status')
-    status_column = [col for col in table.columns if 'Status' in col][0]  # Find the column with "Status"
-    
-    # Step 3: Filter interviews where the status contains "NCNS"
-    ncns_count = interviews[interviews[status_column].str.contains('NCNS', case=False, na=False)].shape[0]
+    # Step 2: Filter interviews where the status contains "NCNS"
+    ncns_count = interviews[interviews['Status'].str.contains('NCNS', case=False, na=False)].shape[0]
     
     return ncns_count, row_count

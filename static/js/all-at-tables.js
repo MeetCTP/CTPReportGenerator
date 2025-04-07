@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     var url = window.URL.createObjectURL(blob);
                     var a = document.createElement('a');
                     a.href = url;
-                    a.download = "All_Airtables.xlsx";
+                    a.download = `All_Airtables_${startDate}-${endDate}.xlsx`;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
