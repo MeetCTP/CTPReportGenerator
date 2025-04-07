@@ -24,6 +24,7 @@ from generators.appt_overlap_pandas import generate_appt_overlap_report
 from generators.original_agora_report import generate_original_agora_report
 from generators.original_insight_report import generate_original_insight_report
 from generators.monthly_at_report import get_all_at_tables
+from generators.valid_emails import generate_valid_email_report
 from generators.code_look_up import code_search
 from flask_cors import CORS
 from datetime import datetime
@@ -799,6 +800,10 @@ def handle_generate_monthly_active_users_report():
 def render_airtable_page():
     return render_template('airtable-test.html')
 
+@app.route('/report-generator/valid-emails')
+def valid_emails_page():
+    return render_template('valid-emails.html')
+
 @app.route('/airtable-test/generate-report', methods=["POST"])
 def airtable_test_page():
     if request.headers['Content-Type'] == 'application/json':
@@ -817,6 +822,18 @@ def airtable_test_page():
                 return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415
+    
+@app.route('/report-generator/valid-emails/generate-report', methods=["POST"])
+def handle_generate_valid_email_report():
+    try:
+        report_file = generate_valid_email_report()
+        return send_file(
+            report_file,
+            as_attachment=True,
+            download_name=f"Valid_Email_Addresses.xlsx"
+        )
+    except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
 @app.route('/report-generator/appt-overlap/generate-report', methods=['POST'])
 def handle_generate_appt_overlap_report():
