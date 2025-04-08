@@ -89,7 +89,6 @@ def generate_pad_indirect(start_date, end_date):
 
         indirect_categories = {
             'ProgressReports': ['Progress', 'Report'],
-            'MakeUpTime': ['Make Up'],
             'Meeting/OtherIndirect': ['IEP', 'School Personnel']
         }
 

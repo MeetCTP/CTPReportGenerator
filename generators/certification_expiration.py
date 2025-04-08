@@ -23,7 +23,6 @@ def generate_cert_exp_report(status, timeframe, provider):
                 DocumentType,
                 DocumentExpirationDate,
                 ExpirationStatus,
-                EmployeeType,
                 Status,
                 EmailAddress
             FROM CertificationExpiration

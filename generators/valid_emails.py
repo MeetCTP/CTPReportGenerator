@@ -20,13 +20,13 @@ def generate_valid_email_report():
         mobile_table = api.table('app27nPo3s0RmlPyW', 'tbl42Un3FVBkJGXpe')
 
         tables = [
-            (counselors_social_table, "Counselors and Social Workers"),
-            (bcba_lbs_table, "BCBA and LBS"),
-            (wilson_table, "Wilson Reading Instructors"),
-            (speech_table, "Speech Therapists"),
-            (sped_table, "SPED Teachers and Tutors"),
+            #(counselors_social_table, "Counselors and Social Workers"),
+            #(bcba_lbs_table, "BCBA and LBS"),
+            #(wilson_table, "Wilson Reading Instructors"),
+            #(speech_table, "Speech Therapists"),
+            #(sped_table, "SPED Teachers and Tutors"),
             (paras_table, "Paraprofessional"),
-            (mobile_table, "Mobile Therapist")
+            #(mobile_table, "Mobile Therapist")
         ]
         
         valid_emails = []  # List to hold valid emails
