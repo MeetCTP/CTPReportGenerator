@@ -100,6 +100,7 @@ def count_ncns_in_interviews(table):
     row_count = len(interviews)
     
     # Step 2: Filter interviews where the status contains "NCNS"
+    interviews['Status'] = interviews['Status'].astype(str)
     ncns_count = interviews[interviews['Status'].str.contains('NCNS', case=False, na=False)].shape[0]
     
     return ncns_count, row_count

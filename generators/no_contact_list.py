@@ -2,9 +2,18 @@ import pandas as pd
 from sqlalchemy import create_engine
 from datetime import datetime
 from pyairtable import Api
+import requests
+import time
 import io
 import os
 import re
+
+API_URL = "https://api.airtable.com/v0/YOUR_BASE_ID/YOUR_TABLE_NAME"
+API_KEY = "patpaS7kXYs546WpG.cc10e36e0d622e8e5b8d1be51a6b27eaabb16b2ce3cd8009157bc4cef04c7783"
+HEADERS = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
 
 def get_inactive_employee_list():
     try:
@@ -19,6 +28,10 @@ def get_inactive_employee_list():
         """
         data = pd.read_sql_query(query, engine)
 
+        data.drop_duplicates(inplace=True)
+
+        return data
+
     except Exception as e:
         print('Error occurred while generating the report: ', e)
         raise e
@@ -26,7 +39,7 @@ def get_inactive_employee_list():
 def get_no_contact_list():
     try:
 
-        api = Api('patpaS7kXYs546WpG.cc10e36e0d622e8e5b8d1be51a6b27eaabb16b2ce3cd8009157bc4cef04c7783')
+        api = Api(API_KEY)
 
         counselors_social_table = api.table('applyILT6MqcpyHWU', 'tblcISPJ1KskmFJ3V')
         bcba_lbs_table = api.table('app9O5xkhfInyGoip', 'tbl0YfBacdKvvNqpq')
@@ -52,6 +65,91 @@ def get_no_contact_list():
             (archived_para_22, "Archived Para Apps 08.15.2022")
         ]
 
+        no_contact_list = pd.DataFrame()
+
+        for table, sheet_name in tables:
+            # Get all records from Airtable
+            records = table.all()
+
+            # Convert records to a DataFrame
+            data = [record['fields'] for record in records]
+            df = pd.DataFrame(data)
+
+            df['Status'] = df['Status'].astype(str)
+            df = df[~df['Status'].str.lower().isin(['no hire', 'no contact'])]
+            # Alternate way:
+            # df = df[(df['Status'].str.lower() == 'no contact') | (df['Status'].str.lower() == 'no hire')]
+
+            no_contact_list = pd.concat([no_contact_list, df], ignore_index=True)
+        output_file = io.BytesIO()
+        no_contact_list.to_excel(output_file, index=False)
+        output_file.seek(0)
+        return output_file
+
     except Exception as e:
         print('Error occurred while generating the report: ', e)
         raise e
+    
+def merge_and_push_NC():
+    try:
+        # Step 1: Retrieve the two dataframes (using your existing function)
+        at_table = get_no_contact_list()  # Assuming this returns a DataFrame
+        inactive_employee_df = get_inactive_employee_list()  # Assuming this returns a DataFrame
+        
+        # Step 2: Merge the two dataframes on 'Email Address' (and possibly other columns)
+        merged_df = pd.merge(at_table, inactive_employee_df, on='Email Address', how='outer')
+        
+        # Step 3: Remove duplicates based on 'Email Address' (or other relevant columns)
+        merged_df = merged_df.drop_duplicates(subset=['Email Address'], keep='first')
+        
+        # Step 4: Prepare the merged dataframe to be pushed to Airtable
+        records_to_push = merged_df.to_dict(orient='records')
+        
+        # Step 5: Push the records to Airtable (batch upload)
+        batch_size = 10  # Airtable API limit: 10 records per batch
+        for i in range(0, len(records_to_push), batch_size):
+            batch = records_to_push[i:i+batch_size]
+            payload = {
+                "records": [{"fields": record} for record in batch]
+            }
+            response = requests.post(API_URL, json=payload, headers=HEADERS)
+            
+            # Check if the request was successful
+            if response.status_code == 200:
+                print(f"Batch {i//batch_size + 1} uploaded successfully.")
+            else:
+                print(f"Error uploading batch {i//batch_size + 1}: {response.text}")
+
+    except Exception as e:
+        print('Error occurred while generating the report: ', e)
+        raise e
+    
+def scan_tables():
+    # Your desired status to trigger the action
+    TRIGGER_STATUS = "Completed"
+
+    # Define a function to check for changes
+    def check_status_and_update():
+        response = requests.get(API_URL, headers=HEADERS)
+        data = response.json()
+        
+        for record in data['records']:
+            status = record['fields'].get('Status')
+            
+            if status == TRIGGER_STATUS:
+                # Update the new table with this record's data
+                new_row_data = {
+                    "fields": {
+                        "Column1": record['fields']['Column1'],
+                        "Column2": record['fields']['Column2'],
+                        # Add other columns as necessary
+                    }
+                }
+                # Insert a new row into the new table
+                new_table_url = "https://api.airtable.com/v0/YOUR_BASE_ID/YOUR_NEW_TABLE_NAME"
+                requests.post(new_table_url, json=new_row_data, headers=HEADERS)
+
+    # Set a loop to run periodically (every minute, for example)
+    while True:
+        check_status_and_update()
+        time.sleep(60)  # Check every 60 seconds
