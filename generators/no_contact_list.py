@@ -28,6 +28,8 @@ def get_inactive_employee_list():
         """
         data = pd.read_sql_query(query, engine)
 
+        data.rename(columns={'Email': 'Email Address'}, inplace=True)
+
         data.drop_duplicates(inplace=True)
 
         return data
@@ -51,6 +53,7 @@ def get_no_contact_list():
         archived_para_21_22 = api.table('appJMe2I9C9NMSu9d', 'tblwpjA57QX8h8xj6')
         archived_para_19_21 = api.table('appkZep4g2h0AGfR9', 'tblwDYMALGzp1Gfbl')
         archived_para_22 = api.table('appCsoodShQ4P4JrV', 'tbltCys3NfScMbLyW')
+        not_to_use = api.table('appGL58BLgeQts6DX', 'tblxVfcrGegYqz8KY')
 
         tables = [
             (counselors_social_table, "Counselors and Social Workers"),
@@ -62,7 +65,8 @@ def get_no_contact_list():
             (mobile_table, "Mobile Therapist"),
             (archived_para_21_22, "Archived Para Apps 2021-2022"),
             (archived_para_19_21, "Archived Para Apps 2019-2021"),
-            (archived_para_22, "Archived Para Apps 08.15.2022")
+            (archived_para_22, "Archived Para Apps 08.15.2022"),
+            (not_to_use, "Simple Tracker (Not to use)")
         ]
 
         no_contact_list = pd.DataFrame()
@@ -81,10 +85,8 @@ def get_no_contact_list():
             # df = df[(df['Status'].str.lower() == 'no contact') | (df['Status'].str.lower() == 'no hire')]
 
             no_contact_list = pd.concat([no_contact_list, df], ignore_index=True)
-        output_file = io.BytesIO()
-        no_contact_list.to_excel(output_file, index=False)
-        output_file.seek(0)
-        return output_file
+        
+        return no_contact_list
 
     except Exception as e:
         print('Error occurred while generating the report: ', e)
@@ -102,8 +104,49 @@ def merge_and_push_NC():
         # Step 3: Remove duplicates based on 'Email Address' (or other relevant columns)
         merged_df = merged_df.drop_duplicates(subset=['Email Address'], keep='first')
         
+        df_cleaned = merged_df.copy()
+        
+        def get_full_name(row):
+            if pd.notnull(row.get('FirstName')) and pd.notnull(row.get('LastName')):
+                return f"{row['FirstName']} {row['LastName']}"
+            return row.get('Name')
+
+        df_cleaned['Full Name'] = df_cleaned.apply(get_full_name, axis=1)
+
+        # Find a phone column dynamically (any column containing 'phone', case-insensitive)
+        phone_cols = [col for col in df_cleaned.columns if 'phone' in col.lower()]
+        phone_column = phone_cols[0] if phone_cols else None  # pick the first match, or None if not found
+
+        # Build new DataFrame
+        final_columns = {
+            'Name': df_cleaned['Full Name'],
+            'Stage': '',  # left blank for now
+            'Applying for': '',  # left blank for now
+            'Email address': df_cleaned.get('Email Address', ''),
+            'Phone': df_cleaned[phone_column] if phone_column else '',
+            'Phone interviewer': '',  # left blank for now
+            'Phone interview score': '',  # left blank for now
+            'Phone interview notes': '',  # left blank for now
+            'Onsite interview': '',  # left blank for now
+            'Onsite interviewer': '',  # left blank for now
+            'Onsite interview score': '',  # left blank for now
+            'Onsite interview notes': ''  # left blank for now
+        }
+
+        # Create the final DataFrame
+        df_final = pd.DataFrame(final_columns)
+        df_final.drop_duplicates(inplace=True)
+        df_final['Name'] = df_final['Name'].astype(str)
+        df_final['Name'] = df_final['Name'].apply(lambda x: x.strip().title() if isinstance(x, str) else x)
+        df_final = df_final.sort_values(by='Name', ascending=True)
+        
+        output_file = io.BytesIO()
+        df_final.to_excel(output_file, index=False)
+        output_file.seek(0)
+        return output_file
+        
         # Step 4: Prepare the merged dataframe to be pushed to Airtable
-        records_to_push = merged_df.to_dict(orient='records')
+        """records_to_push = df_final.to_dict(orient='records')
         
         # Step 5: Push the records to Airtable (batch upload)
         batch_size = 10  # Airtable API limit: 10 records per batch
@@ -118,7 +161,7 @@ def merge_and_push_NC():
             if response.status_code == 200:
                 print(f"Batch {i//batch_size + 1} uploaded successfully.")
             else:
-                print(f"Error uploading batch {i//batch_size + 1}: {response.text}")
+                print(f"Error uploading batch {i//batch_size + 1}: {response.text}")"""
 
     except Exception as e:
         print('Error occurred while generating the report: ', e)

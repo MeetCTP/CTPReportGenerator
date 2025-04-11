@@ -71,6 +71,7 @@ def generate_valid_email_report():
             # Concatenate the valid and invalid email dataframes
             if valid_emails:
                 valid_df = pd.concat(valid_emails, ignore_index=True)
+                valid_df = valid_df.sort_values(by='Email Address', ascending=True)
                 valid_df.to_excel(writer, sheet_name="Valid Emails", index=False)
 
             if invalid_emails:

@@ -50,6 +50,8 @@ def generate_client_cancel_report(provider, client, cancel_reasons, start_date, 
                 WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{month_ranges[0][0].strftime('%Y-%m-%d')}' AND '{month_ranges[-1][1].strftime('%Y-%m-%d')}')
             """, engine)
 
+            all_data = all_data.sort_values(by='ServiceDate', ascending=True)
+
             three_cancels = check_three_cancels_in_a_row(all_data, cancel_reasons)
             cancel_percentage = calculate_cancellation_percentage(all_data, cancel_reasons)
 

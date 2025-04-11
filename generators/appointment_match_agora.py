@@ -90,7 +90,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                 high_miles.to_excel(writer, sheet_name="Mileage over 60", index=False)
                 high_times.to_excel(writer, sheet_name="Over 60 minute Drive Time", index=False)
                 time_diffs.to_excel(writer, sheet_name="Time Discrepancies", index=False)
-                missing_from.to_excel(writer, sheet_name="Missing From", index=False)
+                missing_from.to_excel(writer, sheet_name="Missing From ET", index=False)
                 #type_diffs.to_excel(writer, sheet_name='Type Discrepancies', index=False)
                 #end_time_diffs.to_excel(writer, sheet_name='EndTimeDiffs', index=False)
 
@@ -369,6 +369,10 @@ def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
     #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
+
+    discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA CLASSROOM']
+    discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA SEL GROUP']
+    #discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA SOCIAL SKILLS']
     
     return discrepancy_df
 
