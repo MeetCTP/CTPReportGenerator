@@ -2,6 +2,7 @@ import pandas as pd
 from pyairtable import Api
 from pandas import ExcelWriter
 import io
+import ast
 
 
 def get_all_at_tables(start_date, end_date):
@@ -53,10 +54,20 @@ def get_all_at_tables(start_date, end_date):
                 
                 filtered_df = df[(df['Interview Scheduled'] >= pd.to_datetime(start_date)) & 
                                  (df['Interview Scheduled'] <= pd.to_datetime(end_date))]
+                
+                df['Interview Completed'] = pd.to_datetime(df['Interview Completed'], errors='coerce')
+                
+                completed_df = df[(df['Interview Completed'] >= pd.to_datetime(start_date)) & 
+                                 (df['Interview Completed'] <= pd.to_datetime(end_date))]
+                
+                completed_df['Interviewer'] = completed_df['Interviewer'].astype(str).apply(normalize_interviewer)
+                
+                completed_by_kim = completed_df[completed_df['Interviewer'].str.contains('Kim Trate', na=False)]
+                
+                completed_interviews += len(completed_by_kim)
 
                 # If no records match the date range, skip this table
                 if filtered_df.empty:
-                    print(f"Skipping {sheet_name} as no data matches the date range.")
                     continue
 
                 # Count interviews and NCNS
@@ -80,7 +91,8 @@ def get_all_at_tables(start_date, end_date):
                 '% of NCNS': ["{:.2f}%".format(total_ncns / total_interviews * 100)],
                 'Total # of NCNS (Para)': [total_paras_ncns],
                 'Total # of Interviews (Para)': [total_paras_interviews],
-                '% of NCNS (Para)': ["{:.2f}%".format(total_paras_ncns / total_paras_interviews * 100)]
+                '% of NCNS (Para)': ["{:.2f}%".format(total_paras_ncns / total_paras_interviews * 100)],
+                'Total Interviews Completed (Kim Only)': [completed_interviews]
             })
             summary_df.to_excel(writer, sheet_name="Summary", index=False)
 
@@ -100,7 +112,16 @@ def count_ncns_in_interviews(table):
     row_count = len(interviews)
     
     # Step 2: Filter interviews where the status contains "NCNS"
-    interviews['Status'] = interviews['Status'].astype(str)
     ncns_count = interviews[interviews['Status'].str.contains('NCNS', case=False, na=False)].shape[0]
     
     return ncns_count, row_count
+
+def normalize_interviewer(val):
+    # Try to safely evaluate the string as a Python literal (e.g. a list)
+    try:
+        parsed = ast.literal_eval(val)
+        if isinstance(parsed, list) and len(parsed) == 1:
+            return parsed[0]
+    except (ValueError, SyntaxError):
+        pass
+    return val  # return as-is if it's not a list
