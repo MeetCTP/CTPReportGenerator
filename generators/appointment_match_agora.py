@@ -139,7 +139,7 @@ def find_mileage_discrepancies(et_data, cr_data):
         suffixes=("_ET", "_CR")
     )
 
-    mile_diffs = merged_mileage[merged_mileage['_merge'] != 'both'].copy()
+    mile_diffs = merged_mileage[merged_mileage['_merge'] == 'right_only'].copy()
     mile_diffs.drop('_merge', axis=1, inplace=True)
     mile_diffs.reset_index(drop=True, inplace=True)
     mile_diffs.drop_duplicates(inplace=True)
