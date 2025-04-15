@@ -23,8 +23,8 @@ def get_inactive_employee_list():
         query = f"""
             SELECT
                 *
-            FROM ActiveContacts
-            WHERE Status = 'Inactive' AND ServiceType = 'employee'
+            FROM NoContactView
+            WHERE Status = 'Inactive' AND Type = 'employee'
         """
         data = pd.read_sql_query(query, engine)
 
@@ -80,9 +80,9 @@ def get_no_contact_list():
             df = pd.DataFrame(data)
 
             df['Status'] = df['Status'].astype(str)
-            df = df[~df['Status'].str.lower().isin(['no hire', 'no contact'])]
+            #df = df[~df['Status'].str.lower().isin(['no hire', 'no contact', 'ncns- no hire'])]
             # Alternate way:
-            # df = df[(df['Status'].str.lower() == 'no contact') | (df['Status'].str.lower() == 'no hire')]
+            df = df[(df['Status'].str.lower() == 'no contact') | (df['Status'].str.lower() == 'no hire') | (df['Status'].str.lower() == 'ncns- no hire')]
 
             no_contact_list = pd.concat([no_contact_list, df], ignore_index=True)
         
@@ -99,12 +99,13 @@ def merge_and_push_NC():
         inactive_employee_df = get_inactive_employee_list()  # Assuming this returns a DataFrame
         
         # Step 2: Merge the two dataframes on 'Email Address' (and possibly other columns)
-        merged_df = pd.merge(at_table, inactive_employee_df, on='Email Address', how='outer')
+        merged_df = pd.merge(at_table, inactive_employee_df, on='Email Address', how='outer', suffixes=('_AT', '_CR'))
         
         # Step 3: Remove duplicates based on 'Email Address' (or other relevant columns)
         merged_df = merged_df.drop_duplicates(subset=['Email Address'], keep='first')
         
         df_cleaned = merged_df.copy()
+        print(df_cleaned.columns)
         
         def get_full_name(row):
             if pd.notnull(row.get('FirstName')) and pd.notnull(row.get('LastName')):
@@ -112,29 +113,43 @@ def merge_and_push_NC():
             return row.get('Name')
 
         df_cleaned['Full Name'] = df_cleaned.apply(get_full_name, axis=1)
+        
+        def get_combined_position(row):
+            pos = row.get('Position')
+            job_title = row.get('JobTitle')
 
-        # Find a phone column dynamically (any column containing 'phone', case-insensitive)
-        phone_cols = [col for col in df_cleaned.columns if 'phone' in col.lower()]
-        phone_column = phone_cols[0] if phone_cols else None  # pick the first match, or None if not found
+            # Convert list to string if necessary
+            if isinstance(pos, list):
+                pos = ', '.join(pos)
+
+            if pd.notnull(pos) and str(pos).strip():
+                return str(pos).strip()
+            elif pd.notnull(job_title):
+                return str(job_title).strip()
+            else:
+                return ''
+            
+        df_cleaned['CombinedPosition'] = df_cleaned.apply(get_combined_position, axis=1)
+        df_cleaned['Notes_CR'] = df_cleaned['Notes_CR'].astype(str)
 
         # Build new DataFrame
         final_columns = {
             'Name': df_cleaned['Full Name'],
-            'Stage': '',  # left blank for now
-            'Applying for': '',  # left blank for now
-            'Email address': df_cleaned.get('Email Address', ''),
-            'Phone': df_cleaned[phone_column] if phone_column else '',
-            'Phone interviewer': '',  # left blank for now
-            'Phone interview score': '',  # left blank for now
-            'Phone interview notes': '',  # left blank for now
-            'Onsite interview': '',  # left blank for now
-            'Onsite interviewer': '',  # left blank for now
-            'Onsite interview score': '',  # left blank for now
-            'Onsite interview notes': ''  # left blank for now
+            'Position': df_cleaned['CombinedPosition'],
+            'Status': df_cleaned['Status_AT'],
+            'Interviewer': df_cleaned['Interviewer'],
+            'Interview Notes': df_cleaned['Interview Notes'],
+            'Notes': df_cleaned['Notes_AT'],
+            'CR_Notes': df_cleaned['Notes_CR']
+            
         }
 
         # Create the final DataFrame
         df_final = pd.DataFrame(final_columns)
+        
+        for col in df_final.columns:
+            df_final[col] = df_final[col].apply(lambda x: str(x) if isinstance(x, list) else x)
+
         df_final.drop_duplicates(inplace=True)
         df_final['Name'] = df_final['Name'].astype(str)
         df_final['Name'] = df_final['Name'].apply(lambda x: x.strip().title() if isinstance(x, str) else x)
