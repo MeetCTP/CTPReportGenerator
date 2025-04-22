@@ -824,8 +824,12 @@ def airtable_test_page():
     
 @app.route('/report-generator/valid-emails/generate-report', methods=["POST"])
 def handle_generate_valid_email_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        table = data['table']
+
     try:
-        report_file = generate_valid_email_report()
+        report_file = generate_valid_email_report(table)
         return send_file(
             report_file,
             as_attachment=True,

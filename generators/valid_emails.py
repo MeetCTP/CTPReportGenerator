@@ -6,7 +6,7 @@ import re
 import os
 from pyairtable import Api
 
-def generate_valid_email_report():
+def generate_valid_email_report(table):
     try:
         # Setup Airtable API client
         api = Api('patpaS7kXYs546WpG.cc10e36e0d622e8e5b8d1be51a6b27eaabb16b2ce3cd8009157bc4cef04c7783')
@@ -20,13 +20,13 @@ def generate_valid_email_report():
         mobile_table = api.table('app27nPo3s0RmlPyW', 'tbl42Un3FVBkJGXpe')
 
         tables = [
-            #(counselors_social_table, "Counselors and Social Workers"),
-            #(bcba_lbs_table, "BCBA and LBS"),
-            #(wilson_table, "Wilson Reading Instructors"),
-            #(speech_table, "Speech Therapists"),
-            #(sped_table, "SPED Teachers and Tutors"),
+            (counselors_social_table, "Counselors and Social Workers"),
+            (bcba_lbs_table, "BCBA and LBS"),
+            (wilson_table, "Wilson Reading Instructors"),
+            (speech_table, "Speech Therapists"),
+            (sped_table, "SPED Teachers and Tutors"),
             (paras_table, "Paraprofessional"),
-            #(mobile_table, "Mobile Therapist")
+            (mobile_table, "Mobile Therapist")
         ]
         
         valid_emails = []  # List to hold valid emails
@@ -36,9 +36,11 @@ def generate_valid_email_report():
 
         # Create a new ExcelWriter object to write data to the output_file
         with ExcelWriter(output_file, engine='openpyxl') as writer:
-            for table, sheet_name in tables:
+            for tbl, sheet_name in tables:
+                if sheet_name != table:
+                    continue
                 # Get all records from Airtable
-                records = table.all()
+                records = tbl.all()
 
                 # Convert records to a DataFrame
                 data = [record['fields'] for record in records]
@@ -47,7 +49,7 @@ def generate_valid_email_report():
                 df['Re-engagement?'] = df['Re-engagement?'].astype(str)
                 df = df[df['Re-engagement?'].str.lower() == 'yes']
                 
-                 # Check if there is an "Email Address" column
+                # Check if there is an "Email Address" column
                 if 'Email Address' in df.columns:
                     # Create a new DataFrame with 'Email Address' and corresponding table name
                     email_df = df[['Email Address']].copy()

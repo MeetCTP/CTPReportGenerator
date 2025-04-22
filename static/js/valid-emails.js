@@ -8,6 +8,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function generateReport() {
+        var form = document.getElementById('report-form');
+        var formData = new FormData(form);
+        var selectedTable = formData.get('table');
+
+        var jsonData = JSON.stringify({
+            table: selectedTable
+        });
+
         var xhr = new XMLHttpRequest();
         xhr.open('POST', '/report-generator/valid-emails/generate-report', true);
         xhr.setRequestHeader('Content-Type', 'application/json');
@@ -37,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         console.log("Request sent")
-        xhr.send();
+        console.log(jsonData)
+        xhr.send(jsonData);
     }
 });

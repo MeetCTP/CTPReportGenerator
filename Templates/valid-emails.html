@@ -3,19 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airtable Test</title>
+    <title>Re-engagement Emails</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
     <script src="{{ url_for('static', filename='js/valid-emails.js') }}"></script>
 </head>
 <body>
     <div class="container-blk">
-        <h1>Airtable Records</h1>
+        <h1>Re-engagement Mailing List</h1>
         <nav class="report-nav">
             <a href="http://ctphome/report-generator">Back to Reports</a>
             <a href="http://ctphome">Home</a>
         </nav>
         <div>
             <form id="report-form">
+                <select id="table" name="table">
+                    <option value="">Select Table</option>
+                    <option value="Counselors and Social Workers">Counselors/Social Workers</option>
+                    <option value="BCBA and LBS">BCBA-LBS</option>
+                    <option value="Wilson Reading Instructors">Wilson Reading Instructors</option>
+                    <option value="Speech Therapists">Speech Therapist</option>
+                    <option value="SPED Teachers and Tutors">SPED Teachers/Tutors</option>
+                    <option value="Paraprofessional">Paraprofessionals</option>
+                    <option value="Mobile Therapist">Mobile Therapist</option>
+                </select>
                 <button id="generate" type="button">Generate Report</button>
             </form>
         </div>
