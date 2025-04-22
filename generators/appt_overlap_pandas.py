@@ -33,6 +33,7 @@ def generate_appt_overlap_report(start_date, end_date, provider, client):
         data_copy = data.copy()
 
         data = find_overlapping_appointments(data, data_copy)
+        data = data[~data['ServiceCodeDescription_1'].str.contains('Group', na=False)]
 
         data.drop_duplicates(inplace=True)
         
