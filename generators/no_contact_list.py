@@ -2,14 +2,15 @@ import pandas as pd
 from sqlalchemy import create_engine
 from datetime import datetime
 from pyairtable import Api
+import numpy as np
 import requests
 import time
 import io
 import os
 import re
 
-API_URL = "https://api.airtable.com/v0/YOUR_BASE_ID/YOUR_TABLE_NAME"
-API_KEY = "patpaS7kXYs546WpG.cc10e36e0d622e8e5b8d1be51a6b27eaabb16b2ce3cd8009157bc4cef04c7783"
+API_URL = "https://api.airtable.com/v0/app4EYPWzbGdr6Lxz/tblpdl8tBk8jHOElr"
+API_KEY = "patpaS7kXYs546WpG.0c6e11f5836a4c6610260c377c861980a3d0373e0796246ef26a7a59b95c02fa"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
@@ -154,14 +155,17 @@ def merge_and_push_NC():
         df_final['Name'] = df_final['Name'].astype(str)
         df_final['Name'] = df_final['Name'].apply(lambda x: x.strip().title() if isinstance(x, str) else x)
         df_final = df_final.sort_values(by='Name', ascending=True)
+
+        df_final = df_final.replace([np.inf, -np.inf], np.nan)
+        df_final = df_final.fillna("None")
         
-        output_file = io.BytesIO()
+        """output_file = io.BytesIO()
         df_final.to_excel(output_file, index=False)
         output_file.seek(0)
-        return output_file
+        return output_file"""
         
         # Step 4: Prepare the merged dataframe to be pushed to Airtable
-        """records_to_push = df_final.to_dict(orient='records')
+        records_to_push = df_final.to_dict(orient='records')
         
         # Step 5: Push the records to Airtable (batch upload)
         batch_size = 10  # Airtable API limit: 10 records per batch
@@ -176,38 +180,11 @@ def merge_and_push_NC():
             if response.status_code == 200:
                 print(f"Batch {i//batch_size + 1} uploaded successfully.")
             else:
-                print(f"Error uploading batch {i//batch_size + 1}: {response.text}")"""
+                print(f"Error uploading batch {i//batch_size + 1}: {response.text}")
 
     except Exception as e:
         print('Error occurred while generating the report: ', e)
         raise e
-    
-def scan_tables():
-    # Your desired status to trigger the action
-    TRIGGER_STATUS = "Completed"
 
-    # Define a function to check for changes
-    def check_status_and_update():
-        response = requests.get(API_URL, headers=HEADERS)
-        data = response.json()
-        
-        for record in data['records']:
-            status = record['fields'].get('Status')
-            
-            if status == TRIGGER_STATUS:
-                # Update the new table with this record's data
-                new_row_data = {
-                    "fields": {
-                        "Column1": record['fields']['Column1'],
-                        "Column2": record['fields']['Column2'],
-                        # Add other columns as necessary
-                    }
-                }
-                # Insert a new row into the new table
-                new_table_url = "https://api.airtable.com/v0/YOUR_BASE_ID/YOUR_NEW_TABLE_NAME"
-                requests.post(new_table_url, json=new_row_data, headers=HEADERS)
 
-    # Set a loop to run periodically (every minute, for example)
-    while True:
-        check_status_and_update()
-        time.sleep(60)  # Check every 60 seconds
+merge_and_push_NC()

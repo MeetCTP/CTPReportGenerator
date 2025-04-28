@@ -830,6 +830,7 @@ def handle_generate_valid_email_report():
 
     try:
         report_file = generate_valid_email_report(table)
+        #report_file = merge_and_push_NC()
         return send_file(
             report_file,
             as_attachment=True,
