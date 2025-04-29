@@ -145,7 +145,7 @@ def generate_util_tracker(start_date, end_date, company_role):
         ins_data.drop_duplicates(inplace=True)
 
         data = pd.concat([data, ins_data], ignore_index=True)
-        data.drop_duplicates(inplace=True)
+        data.drop_duplicates(subset=["Client", "AuthType", "Provider", "AppStart", "AppEnd", "Status"], inplace=True)
 
         output_file = io.BytesIO()
         
