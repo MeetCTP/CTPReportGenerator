@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', '/airtable-test/generate-report', true);
+        xhr.open('POST', '/report-generator/monthly-goals-report/generate-report', true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.responseType = 'blob';
 

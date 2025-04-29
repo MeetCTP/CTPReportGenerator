@@ -9,7 +9,7 @@ from pyairtable import Api
 def generate_valid_email_report(table):
     try:
         # Setup Airtable API client
-        api = Api('patpaS7kXYs546WpG.cc10e36e0d622e8e5b8d1be51a6b27eaabb16b2ce3cd8009157bc4cef04c7783')
+        api = Api('patpaS7kXYs546WpG.0c6e11f5836a4c6610260c377c861980a3d0373e0796246ef26a7a59b95c02fa')
 
         counselors_social_table = api.table('applyILT6MqcpyHWU', 'tblcISPJ1KskmFJ3V')
         bcba_lbs_table = api.table('app9O5xkhfInyGoip', 'tbl0YfBacdKvvNqpq')

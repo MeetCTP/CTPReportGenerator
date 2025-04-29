@@ -795,15 +795,15 @@ def handle_generate_monthly_active_users_report():
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415
 
-@app.route('/airtable-test')
+@app.route('/report-generator/monthly-goals-report')
 def render_airtable_page():
-    return render_template('airtable-test.html')
+    return render_template('monthly-goals.html')
 
 @app.route('/report-generator/valid-emails')
 def valid_emails_page():
     return render_template('valid-emails.html')
 
-@app.route('/airtable-test/generate-report', methods=["POST"])
+@app.route('/report-generator/monthly-goals-report/generate-report', methods=["POST"])
 def airtable_test_page():
     if request.headers['Content-Type'] == 'application/json':
         data = request.get_json()
