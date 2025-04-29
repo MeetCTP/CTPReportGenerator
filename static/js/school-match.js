@@ -37,11 +37,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const excelFileInput = document.getElementById('excel-file');
         const excelFile = excelFileInput.files[0];
 
-        const pgTypeRadio = document.querySelector('input[name="pg_type"]:checked');
-        let pg_type = null;
-        if (pgTypeRadio) {
-            pg_type = pgTypeRadio.value;
-        }
+        const pgTypeCheckboxes = document.querySelectorAll('input[name="pg_type"]:checked');
+        let pg_type = Array.from(pgTypeCheckboxes).map(cb => cb.value);
 
         const schoolChoice = document.querySelector('input[name="school-choice"]:checked');
         if (!schoolChoice) {
@@ -60,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('end_date', endDate);
         formData.append('school', selectedSchool);
         if (pg_type) {
-            formData.append('pg_type', pg_type);
+            pg_type.forEach(val => formData.append('pg_type', val))
         }
         if (excelFile) {
             formData.append('excel_file', excelFile);

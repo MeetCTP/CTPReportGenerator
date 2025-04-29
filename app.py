@@ -436,7 +436,7 @@ def handle_generate_school_matching_report():
     start_date = request.form.get('start_date')
     end_date = request.form.get('end_date')
     school_choice = request.form.get('school')
-    pg_type = request.form.get('pg_type')
+    pg_type = request.form.getlist('pg_type')
     excel_file = request.files.get('excel_file')
 
     # Validate inputs

@@ -31,7 +31,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
         appointment_match_data.drop('School', axis=1, inplace=True)
         
         if employment_type:
-            appointment_match_data = appointment_match_data[appointment_match_data['EmploymentType'] == employment_type]
+            appointment_match_data = appointment_match_data[appointment_match_data['EmploymentType'].isin(employment_type)]
         
         if et_file:
             et_file.seek(0)
@@ -58,7 +58,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                         on='Provider', how='left')
             
             if employment_type:
-                et_data = et_data[et_data['EmploymentType'] == employment_type]
+                et_data = et_data[et_data['EmploymentType'].isin(employment_type)]
                 
             for df in [appointment_match_data, et_data]:
                 for col in df.select_dtypes(include=['object']).columns:
