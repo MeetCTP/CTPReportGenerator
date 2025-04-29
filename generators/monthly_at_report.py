@@ -1,8 +1,10 @@
 import pandas as pd
 from pyairtable import Api
 from pandas import ExcelWriter
+from dotenv import load_dotenv
 import io
 import ast
+import os
 
 
 def get_all_at_tables(start_date, end_date):
@@ -10,8 +12,11 @@ def get_all_at_tables(start_date, end_date):
         start_date = pd.to_datetime(start_date)
         end_date = pd.to_datetime(end_date)
         
-        # Setup Airtable API client
-        api = Api('patpaS7kXYs546WpG.0c6e11f5836a4c6610260c377c861980a3d0373e0796246ef26a7a59b95c02fa')
+        load_dotenv()
+
+        api_key = os.getenv("AT_API_KEY")
+
+        api = Api(api_key)
 
         counselors_social_table = api.table('applyILT6MqcpyHWU', 'tblcISPJ1KskmFJ3V')
         bcba_lbs_table = api.table('app9O5xkhfInyGoip', 'tbl0YfBacdKvvNqpq')
