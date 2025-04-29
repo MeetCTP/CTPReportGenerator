@@ -15,7 +15,9 @@ import io
 def generate_appointment_agora_report(range_start, range_end, et_file, employment_type):
     try:
         user_name = os.getlogin()
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
+        db_user = os.getenv("DB_USER")
+        db_pw = os.getenv("DB_PW")
+        connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
         range_start_101 = datetime.strptime(range_start, '%Y-%m-%d')
         range_end_101 = datetime.strptime(range_end, '%Y-%m-%d')
@@ -85,12 +87,12 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
             with ExcelWriter(output_file, engine='openpyxl') as writer:
                 appointment_match_data.to_excel(writer, sheet_name="CR Data", index=False)
                 et_data.to_excel(writer, sheet_name="ET Data", index=False)
+                missing_from.to_excel(writer, sheet_name="Missing From ET", index=False)
+                time_diffs.to_excel(writer, sheet_name="Time Discrepancies", index=False)
                 status_diffs.to_excel(writer, sheet_name="Status Discrepancies", index=False)
                 mile_diffs.to_excel(writer, sheet_name="Mileage Discrepancies", index=False)
                 high_miles.to_excel(writer, sheet_name="Mileage over 60", index=False)
                 high_times.to_excel(writer, sheet_name="Over 60 minute Drive Time", index=False)
-                time_diffs.to_excel(writer, sheet_name="Time Discrepancies", index=False)
-                missing_from.to_excel(writer, sheet_name="Missing From ET", index=False)
                 #type_diffs.to_excel(writer, sheet_name='Type Discrepancies', index=False)
                 #end_time_diffs.to_excel(writer, sheet_name='EndTimeDiffs', index=False)
 

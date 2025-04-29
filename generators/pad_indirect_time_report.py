@@ -77,7 +77,9 @@ def calculate_indirect_time(data):
 
 def generate_pad_indirect(start_date, end_date):
     try:
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
+        db_user = os.getenv("DB_USER")
+        db_pw = os.getenv("DB_PW")
+        connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
         
         query = f"""

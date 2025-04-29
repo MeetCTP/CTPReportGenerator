@@ -13,7 +13,9 @@ import io
 def generate_original_agora_report(range_start, range_end):
     try:
         user_name = os.getlogin()
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
+        db_user = os.getenv("DB_USER")
+        db_pw = os.getenv("DB_PW")
+        connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
         range_start_dt = pd.to_datetime(range_start)
         range_end_dt = pd.to_datetime(range_end)

@@ -17,7 +17,9 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
     try:
         user_name = os.getlogin()
         documents_path = f"C:/Users/{user_name}/Documents/"
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
+        db_user = os.getenv("DB_USER")
+        db_pw = os.getenv("DB_PW")
+        connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
         today = datetime.now()
 

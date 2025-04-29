@@ -7,13 +7,16 @@ import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
 import os
 import io
 
 def generate_appointment_insight_report(range_start, range_end, rsm_file, employment_type):
     try:
         user_name = os.getlogin()
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
+        db_user = os.getenv("DB_USER")
+        db_pw = os.getenv("DB_PW")
+        connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
         range_start_101 = datetime.strptime(range_start, '%Y-%m-%d')
         range_end_101 = datetime.strptime(range_end, '%Y-%m-%d')

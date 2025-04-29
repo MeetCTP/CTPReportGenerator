@@ -2,6 +2,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from datetime import datetime
 from pyairtable import Api
+from dotenv import load_dotenv
 import numpy as np
 import requests
 import time
@@ -9,8 +10,9 @@ import io
 import os
 import re
 
+load_dotenv()
 API_URL = "https://api.airtable.com/v0/app4EYPWzbGdr6Lxz/tblpdl8tBk8jHOElr"
-API_KEY = "patpaS7kXYs546WpG.0c6e11f5836a4c6610260c377c861980a3d0373e0796246ef26a7a59b95c02fa"
+API_KEY = os.getenv("AT_API_KEY")
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
@@ -18,7 +20,9 @@ HEADERS = {
 
 def get_inactive_employee_list():
     try:
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB:1433/CRDB2"
+        db_user = os.getenv("DB_USER")
+        db_pw = os.getenv("DB_PW")
+        connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB:1433/CRDB2"
         engine = create_engine(connection_string)
 
         query = f"""

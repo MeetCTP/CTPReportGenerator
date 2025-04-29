@@ -13,7 +13,9 @@ def generate_no_show_late_cancel_report(app_start, app_end, provider, client, sc
     try:
         user_name = os.getlogin()
         documents_path = f"C:/Users/{user_name}/Documents/"
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB2"
+        db_user = os.getenv("DB_USER")
+        db_pw = os.getenv("DB_PW")
+        connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
         app_start_dt = pd.to_datetime(app_start)
         app_end_dt = pd.to_datetime(app_end)

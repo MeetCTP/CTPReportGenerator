@@ -4,6 +4,7 @@ import msal
 import pandas as pd
 import openpyxl
 from flask_talisman import Talisman
+from dotenv import load_dotenv
 from generators.appointment_match_agora import generate_appointment_agora_report
 from generators.appointment_match_insight import generate_appointment_insight_report
 from generators.active_contacts_report import generate_active_contacts_report
@@ -41,6 +42,8 @@ import traceback
 import tempfile
 import os
 
+load_dotenv()
+
 csp = {
     'default-src': "'self'",
     'style-src': [
@@ -57,7 +60,10 @@ app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 wsgi_app = app.wsgi_app
 
-connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CTPHOME"
+db_user = os.getenv("DB_USER")
+db_pw = os.getenv("DB_PW")
+
+connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB/CTPHOME"
 engine = create_engine(connection_string)
 
 #People

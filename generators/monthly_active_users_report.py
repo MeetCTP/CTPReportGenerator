@@ -10,7 +10,9 @@ import openpyxl
 def generate_monthly_active_users(start_date, end_date):
     try:
         user_name = os.getlogin()
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB:1433/CRDB2"
+        db_user = os.getenv("DB_USER")
+        db_pw = os.getenv("DB_PW")
+        connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB:1433/CRDB2"
         engine = create_engine(connection_string)
 
         start_date = datetime.strptime(start_date, '%Y-%m-%d')

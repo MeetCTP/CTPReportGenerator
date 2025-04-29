@@ -9,7 +9,9 @@ import openpyxl
 def generate_provider_connections_report():
     try:
         os.getlogin()
-        connection_string = f"mssql+pymssql://MeetCTP\Administrator:$Unlock01@CTP-DB/CRDB"
+        db_user = os.getenv("DB_USER")
+        db_pw = os.getenv("DB_PW")
+        connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB/CRDB"
         today_dt = datetime.now()
         today = datetime.strftime(today_dt, '%Y-%m-%d')
         engine = create_engine(connection_string)
