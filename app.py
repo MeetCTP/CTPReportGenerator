@@ -82,16 +82,17 @@ olivia = f"Olivia.a.DiPasquale"
 megan = f"Megan.Leighton"
 deborah = f"Deborah.Debrule"
 kim = f"Kimberly.D.Trate"
+ashley = f"Ashley.D.James"
 
 #Groups
 admin_group = [lisa, admin, dan]
 recruiting_group = [amy, kim]
 clinical_group = []
 accounting_group = [eileen, deborah]
-student_services_group = [eileen, christi, olivia]
+student_services_group = [eileen, christi, olivia, ashley]
 human_resources_group = [aaron, linda]
-testing_group = [josh, fabian, megan, cari]
-site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy]
+testing_group = [josh, fabian, megan, cari, ashley]
+site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy, ashley]
 
 def handle_submit_form_data(table, data):
     if table == 'News_Posts':
