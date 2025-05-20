@@ -96,8 +96,11 @@ def generate_util_tracker(start_date, end_date, company_role):
 
         indirect_categories = {
             'ProgressReports': ['Progress', 'Report'],
-            'MakeUpTime': ['Make Up'],
             'Meeting/OtherIndirect': ['IEP', 'School Personnel']
+        }
+
+        direct_categories = {
+            'MakeUpTime': ['Make Up']
         }
 
         general_indirect_kw = ['Indirect']
@@ -109,12 +112,20 @@ def generate_util_tracker(start_date, end_date, company_role):
             if pd.isnull(row['ServiceCodeDescription']) or row['ServiceCodeDescription'] == '':
                 return 'Undefined', 'Undefined'
 
+            # Check Indirect categories
             for subcategory, keywords in indirect_categories.items():
                 if any(keyword in row['ServiceCodeDescription'] for keyword in keywords):
+                    row['AuthType'] = 'monthly'
                     return 'Indirect', subcategory
 
+            # Check general indirect keywords
             if any(keyword in row['ServiceCodeDescription'] for keyword in general_indirect_kw):
                 return 'Indirect', 'Indirect Time'
+
+            # Check Direct categories (MakeUpTime now belongs here)
+            for subcategory, keywords in direct_categories.items():
+                if any(keyword in row['ServiceCodeDescription'] for keyword in keywords):
+                    return 'Direct', subcategory
 
             return 'Direct', 'Direct Time'
         
