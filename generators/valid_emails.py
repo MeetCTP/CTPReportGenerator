@@ -7,7 +7,7 @@ import re
 import os
 from pyairtable import Api
 
-def generate_valid_email_report(table):
+def generate_valid_email_report(selected_tables):
     try:
         load_dotenv()
 
@@ -49,14 +49,25 @@ def generate_valid_email_report(table):
         # Create a new ExcelWriter object to write data to the output_file
         with ExcelWriter(output_file, engine='openpyxl') as writer:
             for tbl, sheet_name in tables:
-                if sheet_name != table:
+                if sheet_name not in selected_tables:
                     continue
                 # Get all records from Airtable
                 records = tbl.all()
 
+                if not records:
+                    continue
+
                 # Convert records to a DataFrame
-                data = [record['fields'] for record in records]
+                try:
+                    data = [record['fields'] for record in records]
+                except KeyError:
+                    continue
                 df = pd.DataFrame(data)
+                if df.empty:
+                    continue
+
+                if 'Re-engagement?' not in df.columns:
+                    continue
 
                 df['Re-engagement?'] = df['Re-engagement?'].astype(str)
                 df = df[df['Re-engagement?'].str.lower() == 'yes']

@@ -12,8 +12,21 @@ document.addEventListener('DOMContentLoaded', function () {
         var formData = new FormData(form);
         var selectedTable = formData.get('table');
 
+        let selectedTables = []
+        if (selectedTable === "Paraprofessional") {
+            selectedTables = [
+                "Paraprofessional",
+                "Archived Para Apps 2021-2022",
+                "Archived Para Apps 2019-2021",
+                "Archived Para Apps 08.15.2022",
+                "Simple Tracker (Not to use)"
+            ]
+        } else {
+            selectedTables = [selectedTable]
+        }
+
         var jsonData = JSON.stringify({
-            table: selectedTable
+            tables: selectedTables
         });
 
         var xhr = new XMLHttpRequest();

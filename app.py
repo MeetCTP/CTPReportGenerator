@@ -833,10 +833,10 @@ def airtable_test_page():
 def handle_generate_valid_email_report():
     if request.headers['Content-Type'] == 'application/json':
         data = request.get_json()
-        table = data['table']
+        selected_tables = data.get('tables', [])
 
     try:
-        report_file = generate_valid_email_report(table)
+        report_file = generate_valid_email_report(selected_tables)
         #report_file = merge_and_push_NC()
         return send_file(
             report_file,
