@@ -95,7 +95,7 @@ def generate_util_tracker(start_date, end_date, company_role):
         ins_data = pd.read_sql_query(ins_query, engine)
 
         indirect_categories = {
-            'ProgressReports': ['Progress', 'Report'],
+            'Progress Reports': ['Progress', 'Report'],
             'Meeting/OtherIndirect': ['IEP', 'School Personnel']
         }
 
