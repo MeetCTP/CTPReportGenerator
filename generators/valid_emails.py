@@ -22,6 +22,10 @@ def generate_valid_email_report(table):
         sped_table = api.table('appGj6OWRMqrdcydL', 'tblDWEdcCkYnXGNcb')
         paras_table = api.table('app5obuWU6q9BKfiL', 'tblWylyMP4shyRhpM')
         mobile_table = api.table('app27nPo3s0RmlPyW', 'tbl42Un3FVBkJGXpe')
+        archived_para_21_22 = api.table('appJMe2I9C9NMSu9d', 'tblwpjA57QX8h8xj6')
+        archived_para_19_21 = api.table('appkZep4g2h0AGfR9', 'tblwDYMALGzp1Gfbl')
+        archived_para_22 = api.table('appCsoodShQ4P4JrV', 'tbltCys3NfScMbLyW')
+        not_to_use = api.table('appGL58BLgeQts6DX', 'tblxVfcrGegYqz8KY')
 
         tables = [
             (counselors_social_table, "Counselors and Social Workers"),
@@ -30,7 +34,11 @@ def generate_valid_email_report(table):
             (speech_table, "Speech Therapists"),
             (sped_table, "SPED Teachers and Tutors"),
             (paras_table, "Paraprofessional"),
-            (mobile_table, "Mobile Therapist")
+            (mobile_table, "Mobile Therapist"),
+            (archived_para_21_22, "Archived Para Apps 2021-2022"),
+            (archived_para_19_21, "Archived Para Apps 2019-2021"),
+            (archived_para_22, "Archived Para Apps 08.15.2022"),
+            (not_to_use, "Simple Tracker (Not to use)")
         ]
         
         valid_emails = []  # List to hold valid emails
