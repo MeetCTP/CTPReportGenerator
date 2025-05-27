@@ -49,6 +49,11 @@ def calculate_cancellation_percentage(data):
 
     return data
 
+def get_first_valid_index(group):
+    # Find the index of the first row in the group with a valid AuthHours
+    valid = group['AuthHours'].fillna(0) > 0
+    return group[valid].head(1).index if valid.any() else pd.Index([])
+
 def generate_util_tracker(start_date, end_date, company_role):
     try:
         user_name = os.getlogin()
@@ -157,6 +162,9 @@ def generate_util_tracker(start_date, end_date, company_role):
 
         data = pd.concat([data, ins_data], ignore_index=True)
         data.drop_duplicates(subset=["Client", "AuthType", "Provider", "AppStart", "AppEnd", "Status"], inplace=True)
+        valid_indices = data.groupby(['Client', 'ServiceCode']).apply(get_first_valid_index).explode().dropna().astype(int)
+        data.loc[~data.index.isin(valid_indices), 'AuthHours'] = 0
+        data.loc[data['Subcategory'] == 'Indirect Time', 'AuthType'] = 'monthly'
 
         output_file = io.BytesIO()
         
