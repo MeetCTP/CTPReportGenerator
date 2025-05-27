@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 async function generateReportsForAllSchools() {
+
     var form = document.getElementById('report-form');
     var formData = new FormData(form);
 
@@ -127,6 +128,23 @@ function generateReportForSchool(school, app_start, app_end, provider, client, f
 }
 
 async function generateReportForSelectSchool() {
+    var messageDiv = document.getElementById('loading-message');
+    if (!messageDiv) {
+        messageDiv = document.createElement('div');
+        messageDiv.id = 'loading-message';
+        messageDiv.style.position = 'fixed';
+        messageDiv.style.top = '50%';
+        messageDiv.style.left = '50%';
+        messageDiv.style.transform = 'translate(-50%, -50%)';
+        messageDiv.style.padding = '20px';
+        messageDiv.style.backgroundColor = '#666';
+        messageDiv.style.border = '1px solid #ccc';
+        messageDiv.style.zIndex = '1000';
+        messageDiv.style.textAlign = 'center';
+        messageDiv.innerHTML = '<p>Generating the report, please be patient. This might take a few minutes...</p>';
+        document.body.appendChild(messageDiv);
+    }
+
     var form = document.getElementById('report-form');
     var formData = new FormData(form);
 
@@ -161,6 +179,7 @@ async function generateReportForSelectSchool() {
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
+                messageDiv.style.display = 'none';
                 console.log('Report generated and downloaded for:', selectedSchool);
             } else {
                 var reader = new FileReader();
@@ -178,6 +197,23 @@ async function generateReportForSelectSchool() {
 }
 
 async function generateSingleReport() {
+    var messageDiv = document.getElementById('loading-message');
+    if (!messageDiv) {
+        messageDiv = document.createElement('div');
+        messageDiv.id = 'loading-message';
+        messageDiv.style.position = 'fixed';
+        messageDiv.style.top = '50%';
+        messageDiv.style.left = '50%';
+        messageDiv.style.transform = 'translate(-50%, -50%)';
+        messageDiv.style.padding = '20px';
+        messageDiv.style.backgroundColor = '#666';
+        messageDiv.style.border = '1px solid #ccc';
+        messageDiv.style.zIndex = '1000';
+        messageDiv.style.textAlign = 'center';
+        messageDiv.innerHTML = '<p>Generating the report, please be patient. This might take a few minutes...</p>';
+        document.body.appendChild(messageDiv);
+    }
+
     var form = document.getElementById('report-form');
     var formData = new FormData(form);
 
@@ -229,6 +265,7 @@ async function generateSingleReport() {
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
+                messageDiv.style.display = 'none';
                 console.log('Single report generated and downloaded.');
             } else {
                 var reader = new FileReader();

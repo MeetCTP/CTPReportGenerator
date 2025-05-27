@@ -7,6 +7,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function generateReport() {
+        var messageDiv = document.getElementById('loading-message');
+        if (!messageDiv) {
+            messageDiv = document.createElement('div');
+            messageDiv.id = 'loading-message';
+            messageDiv.style.position = 'fixed';
+            messageDiv.style.top = '50%';
+            messageDiv.style.left = '50%';
+            messageDiv.style.transform = 'translate(-50%, -50%)';
+            messageDiv.style.padding = '20px';
+            messageDiv.style.backgroundColor = '#666';
+            messageDiv.style.border = '1px solid #ccc';
+            messageDiv.style.zIndex = '1000';
+            messageDiv.style.textAlign = 'center';
+            messageDiv.innerHTML = '<p>Generating the report, please be patient. This might take a few minutes...</p>';
+            document.body.appendChild(messageDiv);
+        }
+
         var startDate = document.getElementById('start-date').value;
         var endDate = document.getElementById('end-date').value;
         var provider = document.getElementById('provider').value.trim();
@@ -42,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
+                    messageDiv.style.display = 'none';
                 } else {
                     var reader = new FileReader();
                     reader.onload = function () {
