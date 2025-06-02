@@ -165,6 +165,29 @@ def generate_util_tracker(start_date, end_date, company_role):
         valid_indices = data.groupby(['Client', 'ServiceCode']).apply(get_first_valid_index).explode().dropna().astype(int)
         data.loc[~data.index.isin(valid_indices), 'AuthHours'] = 0
         data.loc[data['Subcategory'] == 'Indirect Time', 'AuthType'] = 'monthly'
+        data = data[[
+            'Client',
+            'LastName',
+            'AuthType',
+            'AuthHours',
+            'ServiceCode',
+            'ServiceCodeDescription',
+            'Provider',
+            'AppStart',
+            'AppEnd',
+            'EventHours',
+            'SchedulingConvertedToTimesheet',
+            'Status',
+            'SchedulingCancelled',
+            'SchedulingCancelledReason',
+            'SchedulingName',
+            'PayorName',
+            'Category',
+            'Subcategory',
+            'CompletedPercentage',
+            'CancellationPercentage',
+            'PayorPlanName',
+            'School']]
 
         output_file = io.BytesIO()
         
