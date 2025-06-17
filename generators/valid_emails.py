@@ -132,6 +132,7 @@ def validate_and_filter_emails(email):
         return email, False
     
 def email_validation(email):
+    email = email.strip()
     email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if email is None:
         return False

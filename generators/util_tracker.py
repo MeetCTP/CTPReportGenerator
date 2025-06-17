@@ -50,10 +50,8 @@ def calculate_cancellation_percentage(data):
     return data
 
 def get_first_valid_index(group):
-    # Find the index of the first row in the group with a valid AuthHours
     valid = group['AuthHours'].fillna(0) > 0
     return group[valid].head(1).index if valid.any() else pd.Index([])
-
 def generate_util_tracker(start_date, end_date, company_role):
     try:
         user_name = os.getlogin()
@@ -85,11 +83,11 @@ def generate_util_tracker(start_date, end_date, company_role):
         """
 
         if company_role == 'Employee':
-            query += f"""WHERE Provider IN ({', '.join([f"'{p}'" for p in employee_providers])})"""
-            ins_query += f"""WHERE Provider IN ({', '.join([f"'{p}'" for p in employee_providers])})"""
-        else:
-            query += f"""WHERE Provider = 'Nicole Morrison'"""
-            ins_query += f"""WHERE Provider = 'Nicole Morrison'"""
+            query += f"""WHERE Provider IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
+            ins_query += f"""WHERE Provider IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
+        elif company_role == 'Contractor':
+            query += f"""WHERE Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
+            ins_query += f"""WHERE Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
 
         query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
 
@@ -123,6 +121,10 @@ def generate_util_tracker(start_date, end_date, company_role):
                     row['AuthType'] = 'monthly'
                     return 'Indirect', subcategory
 
+            for subcategory, keywords in direct_categories.items():
+                if any(keyword in row['ServiceCodeDescription'] for keyword in keywords):
+                    return 'Direct', subcategory
+
             # Check general indirect keywords
             if any(keyword in row['ServiceCodeDescription'] for keyword in general_indirect_kw):
                 return 'Indirect', 'Indirect Time'
@@ -140,8 +142,6 @@ def generate_util_tracker(start_date, end_date, company_role):
             )
 
             data['SchedulingCancelledReason'] = data['SchedulingCancelledReason'].replace('', np.nan)
-            data = calculate_completion_percentage(data)
-            data = calculate_cancellation_percentage(data)
 
         if not ins_data.empty:
             ins_data[['Category', 'Subcategory']] = ins_data.apply(
@@ -149,8 +149,6 @@ def generate_util_tracker(start_date, end_date, company_role):
             )
 
             ins_data['SchedulingCancelledReason'] = ins_data['SchedulingCancelledReason'].replace('', np.nan)
-            ins_data = calculate_completion_percentage(ins_data)
-            ins_data = calculate_cancellation_percentage(ins_data)
 
         #if data['Subcategory'] == 'MakeUpTime'
 
@@ -165,30 +163,28 @@ def generate_util_tracker(start_date, end_date, company_role):
         valid_indices = data.groupby(['Client', 'ServiceCode']).apply(get_first_valid_index).explode().dropna().astype(int)
         data.loc[~data.index.isin(valid_indices), 'AuthHours'] = 0
         data.loc[data['Subcategory'] == 'Indirect Time', 'AuthType'] = 'monthly'
-        data = data[[
-            'Client',
-            'LastName',
-            'AuthType',
-            'AuthHours',
-            'ServiceCode',
-            'ServiceCodeDescription',
-            'Provider',
-            'AppStart',
-            'AppEnd',
-            'EventHours',
-            'SchedulingConvertedToTimesheet',
-            'Status',
-            'SchedulingCancelled',
-            'SchedulingCancelledReason',
-            'SchedulingName',
-            'PayorName',
-            'Category',
-            'Subcategory',
-            'CompletedPercentage',
-            'CancellationPercentage',
-            'PayorPlanName',
-            'School']]
+        data['Provider'] = data['Provider'].astype(str).str.replace(' ', '_')
+        data['School'] = data['School'].astype(str).str.replace(' ', '_')
 
+        data = data[['Client',
+                     'LastName',
+                     'School',
+                     'AuthType',
+                     'AuthHours',
+                     'ServiceCode',
+                     'ServiceCodeDescription',
+                     'Provider',
+                     'AppStart',
+                     'AppEnd',
+                     'EventHours',
+                     'Status',
+                     'SchedulingCancelledReason',
+                     'PayorName',
+                     'PayorPlanName',
+                     'Coordinator',
+                     'Category',
+                     'Subcategory']] 
+        
         output_file = io.BytesIO()
         
         with ExcelWriter(output_file, engine='openpyxl') as writer:
