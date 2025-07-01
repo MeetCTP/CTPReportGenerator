@@ -84,13 +84,14 @@ megan = f"Megan.Leighton"
 deborah = f"Deborah.Debrule"
 kim = f"Kimberly.D.Trate"
 ashley = f"Ashley.D.James"
+erica = f"Erica.N.Wetzel"
 
 #Groups
 admin_group = [lisa, admin, dan]
 recruiting_group = [amy, kim]
 clinical_group = []
 accounting_group = [eileen, deborah]
-student_services_group = [eileen, christi, olivia, ashley]
+student_services_group = [erica, ashley]
 human_resources_group = [aaron, linda]
 testing_group = [josh, fabian, megan, cari, ashley]
 site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy, ashley]
