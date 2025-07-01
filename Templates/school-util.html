@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connecting The Pieces</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+</head>
+<body>
+    <main class="container-blk">
+        <section>
+            <h1>School Utilization/Enrollment</h1>
+            <nav class="report-nav">
+                <a href="http://ctphome/report-generator">Back to Reports</a>
+                <a href="http://ctphome">Home</a>
+            </nav>
+        </section>
+        <section>
+            <form id="report-form">
+                <div class="client-cancel-date">
+                    <label for="start-date">Start Date:</label>
+                    <input type="date" id="start-date" name="start_date" required>
+                    <br>
+                    <label for="end-date">End Date:</label>
+                    <input type="date" id="end-date" name="end_date" required>
+                </div>
+                <button onclick="generateReport()" type="button">Generate Report</button>
+            </form>
+        </section>
+    </main>
+    <section class="desc-container">
+        <h2 class="in-bl">Report Description</h2>
+        <p class="report-desc">
+            The school utilization report looks at the current week selected by the user and the previous
+            two weeks and compares the total number of students receiving services during those time periods
+            as well as the number of completed hours for those services based on school.
+            <br>
+            <span class="warning">Some Central Reach labels may be inaccurate due to duplicates in their system.</span>
+        </p>
+    </section>
+    <script src="../static/js/school_util.js"></script>
+</body>
+</html>

@@ -26,6 +26,7 @@ from generators.original_agora_report import generate_original_agora_report
 from generators.original_insight_report import generate_original_insight_report
 from generators.monthly_at_report import get_all_at_tables
 from generators.valid_emails import generate_valid_email_report
+from generators.school_utilization import generate_school_util_report
 from generators.no_contact_list import merge_and_push_NC
 from generators.code_look_up import code_search
 from flask_cors import CORS
@@ -437,6 +438,10 @@ def school_match():
 @app.route('/report-generator/appt-overlap')
 def appt_overlap():
     return render_template('appt-overlap.html')
+    
+@app.route('/report-generator/school-util')
+def school_util():
+    return render_template('school-util.html')
 
 @app.route('/report-generator/school-matching/generate-report', methods=['POST'])
 def handle_generate_school_matching_report():
@@ -864,5 +869,24 @@ def handle_generate_appt_overlap_report():
             )
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
+        
+@app.route('/report-generator/school-util/generate-report', methods=['POST'])
+def handle_generate_school_util_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        try:
+            report_file = generate_school_util_report(start_date, end_date)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=f"School_Utilization.xlsx"
+            )
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415
