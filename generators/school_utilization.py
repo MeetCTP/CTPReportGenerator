@@ -37,10 +37,9 @@ service_keywords = {
     'Life Skills Group Class': [r'.*Life Skills.*Group.*'],
     'Classroom IA V': [r'Instructional Aide.*Group.*Virtual.*'],
     'Classroom SEL Support V': [r'SEL.*Support.*Virtual.*'],
-    'Speech': [r'Speech Therapist.*(Face to Face|Virtual)'],
-    'Progress Reports': [r'.*Progress Report.*'],
-    'IEP Meetings': [r'.*IEP.*'],
-    'Indirect Services': [r'.*Indirect.*'],
+    'Speech V': [r'Speech Therapist.*(Face to Face|Virtual)'],
+    'Assessments': [r'.*Assessment.*'],
+    'Indirect Services': [r'.*Indirect.*', r'.*IEP.*', r'.*Progress Report.*'],
 }
 
 def get_week_bounds(date):
