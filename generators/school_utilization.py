@@ -139,12 +139,12 @@ def generate_school_util_report(start_date, end_date):
         data['ServiceCategory'] = data['ServiceCodeDescription'].apply(label_service)
 
         service_hours = (
-            data.groupby(['ServiceCategory', 'Week'])['EventHours']
-            .sum()
+            data.groupby(['ServiceCategory', 'Week'])['Client']
+            .nunique()
             .reset_index()
-            .pivot(index='ServiceCategory', columns='Week', values='EventHours')
+            .pivot(index='ServiceCategory', columns='Week', values='Client')
             .fillna(0)
-            .round(2)
+            .astype(int)
             .reset_index()
         )
 
@@ -156,7 +156,7 @@ def generate_school_util_report(start_date, end_date):
             data.to_excel(writer, sheet_name='Raw', index=False)
             client_counts.to_excel(writer, sheet_name='# of Clients', index=False)
             event_hours.to_excel(writer, sheet_name='# of Hours', index=False)
-            service_hours.to_excel(writer, sheet_name='Hours by Service', index=False)
+            service_hours.to_excel(writer, sheet_name='# of Clients by Service', index=False)
 
         output_file.seek(0)
         return output_file
