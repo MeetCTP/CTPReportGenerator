@@ -1,4 +1,5 @@
 import pandas as pd
+from pandas import ExcelWriter
 import numpy as np
 from sqlalchemy import create_engine
 import pymssql
@@ -31,44 +32,82 @@ def generate_client_cancel_report(provider, client, cancel_reasons, start_date, 
             current_start = next_month_start
 
         # Data collection for each month
-        monthly_data = {}
+        # Data collection per month
+        raw_combined_data = pd.DataFrame()
+        three_cancels_combined = pd.DataFrame()
+        percentage_combined = pd.DataFrame()
+
         for start, end in month_ranges:
+            month_str = start.strftime('%Y-%m')
+            # Pull data for that month
             query = f"""
-                SELECT DISTINCT * FROM ClientCancellationView
-                WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{start.strftime('%Y-%m-%d')}' AND '{end.strftime('%Y-%m-%d')}') 
+                SELECT DISTINCT
+                    Provider,
+                    Client,
+                    School,
+                    ServiceDate,
+                    AppStart,
+                    AppEnd,
+                    CancelledReason
+                FROM ClientCancellationView
+                WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{start.strftime('%Y-%m-%d')}' AND '{end.strftime('%Y-%m-%d')}')
                 AND (CancelledReason IN ({', '.join([f"'{s}'" for s in cancel_reasons])}))
             """
             if provider:
                 query += f" AND Provider = '{provider}'"
             if client:
                 query += f" AND Client = '{client}'"
-            monthly_data[f"{start.strftime('%Y-%m')}"] = pd.read_sql_query(query, engine)
 
-        # Aggregate calculations
-        combined_data = pd.DataFrame()
-        for month, data in monthly_data.items():
+            data = pd.read_sql_query(query, engine)
+
+            # Pull all data within full range for calculations
             all_data = pd.read_sql_query(f"""
-                SELECT * FROM ClientCancellationView
+                SELECT DISTINCT
+                    Provider,
+                    Client,
+                    School,
+                    ServiceDate,
+                    AppStart,
+                    AppEnd,
+                    CancelledReason
+                FROM ClientCancellationView
                 WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{month_ranges[0][0].strftime('%Y-%m-%d')}' AND '{month_ranges[-1][1].strftime('%Y-%m-%d')}')
-            """, engine)
-
-            all_data = all_data.sort_values(by='ServiceDate', ascending=True)
+            """, engine).sort_values(by='ServiceDate', ascending=True)
 
             three_cancels = check_three_cancels_in_a_row(all_data, cancel_reasons)
             cancel_percentage = calculate_cancellation_percentage(all_data, cancel_reasons)
 
-            data[f'ThreeCancels_{month}'] = data['Client'].map(three_cancels)
-            data[f'CancellationPercentage_{month}'] = data['Client'].map(cancel_percentage)
+            # Create copies with only the relevant columns for each sheet
+            three_cancels_df = data.copy()
+            percentage_df = data.copy()
 
-            combined_data = pd.concat([combined_data, data])
+            rows = []
+            for (client, provider), cancel_rows in three_cancels.items():
+                for cancel_row in cancel_rows:
+                    rows.append(cancel_row)
 
-        combined_data.drop_duplicates(inplace=True)
-        combined_data.sort_values(by=['Client', 'AppStart'], ascending=[True, True])
-        combined_data['AppStart'] = combined_data['AppStart'].dt.strftime('%m/%d/%Y %I:%M %p')
+            three_cancels_df = pd.DataFrame(rows)
+
+            percentage_df[f'CancellationPercentage_{month_str}'] = percentage_df['Client'].map(cancel_percentage)
+
+            # Append to each output dataframe
+            raw_combined_data = pd.concat([raw_combined_data, data])
+            three_cancels_combined = pd.concat([three_cancels_combined, three_cancels_df])
+            percentage_combined = pd.concat([percentage_combined, percentage_df])
+
+        # Final formatting
+        for df in [raw_combined_data, three_cancels_combined, percentage_combined]:
+            df.drop_duplicates(inplace=True)
+            df.sort_values(by=['Provider', 'AppStart'], ascending=[True, True], inplace=True)
+            if 'AppStart' in df.columns and pd.api.types.is_datetime64_any_dtype(df['AppStart']):
+                df['AppStart'] = df['AppStart'].dt.strftime('%m/%d/%Y %I:%M %p')
 
         # Output to Excel
         output_file = io.BytesIO()
-        combined_data.to_excel(output_file, index=False)
+        with ExcelWriter(output_file, engine='openpyxl') as writer:
+            raw_combined_data.to_excel(writer, sheet_name='Raw', index=False)
+            three_cancels_combined.to_excel(writer, sheet_name='ThreeCancels', index=False)
+            percentage_combined.to_excel(writer, sheet_name='Percentage', index=False)
         output_file.seek(0)
 
         return output_file
@@ -81,30 +120,33 @@ def generate_client_cancel_report(provider, client, cancel_reasons, start_date, 
         engine.dispose()
 
 def check_three_cancels_in_a_row(data, cancel_reasons):
-    current_client = None
-    cancel_count = 0
-    result = {}
+    results = {}
 
-    for index, row in data.iterrows():
+    # Sort by Client, Provider, then ServiceDate
+    data = data.sort_values(by=['Client', 'Provider', 'AppStart'])
+
+    current_key = None
+    sequence = []
+
+    for _, row in data.iterrows():
         client = row['Client']
+        provider = row['Provider']
         reason = row['CancelledReason']
+        key = (client, provider)
 
-        if client != current_client:
-            current_client = client
-            cancel_count = 0
+        if key != current_key:
+            current_key = key
+            sequence = []
 
         if reason in cancel_reasons:
-            cancel_count += 1
-            if cancel_count == 3:
-                result[client] = True
+            sequence.append(row)
+            if len(sequence) == 3:
+                # We found three in a row — store them and stop for this key
+                results[key] = sequence.copy()
         else:
-            cancel_count = 0
+            sequence = []
 
-    for client in data['Client'].unique():
-        if client not in result:
-            result[client] = False
-
-    return result
+    return results
 
 def calculate_cancellation_percentage(data, cancel_reasons):
     client_sessions = {}
