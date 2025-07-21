@@ -2,12 +2,13 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
 from pandas import ExcelWriter
+from fuzzywuzzy import fuzz
+import re
 import pymssql
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
 import os
 import io
 
@@ -32,19 +33,24 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
         appointment_match_data.drop('School', axis=1, inplace=True)
         
         if employment_type:
-            appointment_match_data = appointment_match_data[appointment_match_data['EmploymentType'] == employment_type]
+            appointment_match_data = appointment_match_data[appointment_match_data['EmploymentType'].isin(employment_type)]
 
         if rsm_file:
             rsm_file.seek(0)
             rsm_data = pd.read_excel(rsm_file)
             rsm_data = rsm_data.sort_values(by=['Therapist', 'First Name'], ascending=True)
             
-            appointment_match_data['Date of Service'] = pd.to_datetime(appointment_match_data['Date of Service']).dt.normalize().astype(object)
-            appointment_match_data['Therapy Start Time'] = pd.to_datetime(appointment_match_data['Therapy Start Time']).dt.strftime('%H:%M:%S').astype('object')
-            appointment_match_data['Therapy End Time'] = pd.to_datetime(appointment_match_data['Therapy End Time']).dt.strftime('%H:%M:%S').astype('object')
+            appointment_match_data['Service Date'] = pd.to_datetime(appointment_match_data['Service Date']).dt.normalize().astype(object)
+            appointment_match_data['Start Time'] = pd.to_datetime(appointment_match_data['Start Time']).dt.strftime('%H:%M:%S').astype('object')
+            appointment_match_data['End Time'] = pd.to_datetime(appointment_match_data['End Time']).dt.strftime('%H:%M:%S').astype('object')
             
-            rsm_data['Date of Service'] = pd.to_datetime(rsm_data['Date of Service']).dt.normalize().astype(object)
-            rsm_data['Student ID'] = rsm_data['Student ID'].astype('object')
+            rsm_data['Student Name'] = rsm_data['Student Name'].astype('object')
+            rsm_data['Service Name'] = rsm_data['Service Name'].astype('object')
+            rsm_data['Delivery Status'] = rsm_data['Delivery Status'].astype('object')
+            rsm_data['Service Date'] = pd.to_datetime(rsm_data['Service Date']).dt.normalize().astype(object)
+            rsm_data['ID Number'] = rsm_data['ID Student'].astype('object')
+            rsm_data['Start Time'] = pd.to_datetime(rsm_data['Start Time']).dt.strftime('%H:%M:%S').astype('object')
+            rsm_data['End Time'] = pd.to_datetime(rsm_data['End Time']).dt.strftime('%H:%M:%S').astype('object')
 
             rsm_data = pd.merge(rsm_data, appointment_match_data[["Therapist", "EmploymentType"]], 
                                 on='Therapist', how='left')
