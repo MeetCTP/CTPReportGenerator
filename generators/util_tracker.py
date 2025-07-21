@@ -185,19 +185,24 @@ def generate_util_tracker(start_date, end_date, company_role):
                      'Category',
                      'Subcategory']] 
 
-        data['ProviderInitial'] = data['Provider'].str[0].str.upper()
-        aj_data = data[data['ProviderInitial'].between('A', 'J')]
-        kz_data = data[data['ProviderInitial'].between('K', 'Z')]
+        if company_role == 'Contractor':
+            data['ProviderInitial'] = data['Provider'].str[0].str.upper()
+            aj_data = data[data['ProviderInitial'].between('A', 'J')]
+            kz_data = data[data['ProviderInitial'].between('K', 'Z')]
 
-        aj_data = aj_data.drop(columns=['ProviderInitial'])
-        kz_data = kz_data.drop(columns=['ProviderInitial'])
-        
+            aj_data = aj_data.drop(columns=['ProviderInitial'])
+            kz_data = kz_data.drop(columns=['ProviderInitial'])
+            
+            output_file = io.BytesIO()
+            
+            with ExcelWriter(output_file, engine='openpyxl') as writer:
+                aj_data.to_excel(writer, sheet_name='A-J', index=False)
+                kz_data.to_excel(writer, sheet_name='K-Z', index=False)
+            
+            output_file.seek(0)
+            return output_file
         output_file = io.BytesIO()
-        
-        with ExcelWriter(output_file, engine='openpyxl') as writer:
-            aj_data.to_excel(writer, sheet_name='A-J', index=False)
-            kz_data.to_excel(writer, sheet_name='K-Z', index=False)
-        
+        data.to_excel(output_file, index=False)
         output_file.seek(0)
         return output_file
 
