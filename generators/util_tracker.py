@@ -183,7 +183,8 @@ def generate_util_tracker(start_date, end_date, company_role):
                      'PayorPlanName',
                      'Coordinator',
                      'Category',
-                     'Subcategory']] 
+                     'Subcategory',
+                     'ChangeNote']] 
 
         if company_role == 'Contractor':
             data['ProviderInitial'] = data['Provider'].str[0].str.upper()
