@@ -103,7 +103,7 @@ def generate_util_tracker(start_date, end_date, company_role):
         }
 
         direct_categories = {
-            'MakeUpTime': ['Make Up']
+            'MakeUpTime': ['Make Up', 'Makeup', 'Make up', 'Make']
         }
 
         general_indirect_kw = ['Indirect']
