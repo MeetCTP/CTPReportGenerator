@@ -25,7 +25,7 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
         appointment_match_query = f"""
             SELECT DISTINCT *
             FROM InsightSessionComparison
-            WHERE CONVERT(DATE, [Date of Service], 101) BETWEEN '{range_start_101}' AND '{range_end_101}'
+            WHERE CONVERT(DATE, [Service Date], 101) BETWEEN '{range_start_101}' AND '{range_end_101}'
         """
         appointment_match_data = pd.read_sql_query(appointment_match_query, engine)
 
@@ -38,38 +38,43 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
         if rsm_file:
             rsm_file.seek(0)
             rsm_data = pd.read_excel(rsm_file)
-            rsm_data = rsm_data.sort_values(by=['Therapist', 'First Name'], ascending=True)
+            rsm_data = rsm_data.sort_values(by=['Provider', 'Student Name'], ascending=True)
+            rsm_data['Status'] = rsm_data['Delivery Status'].apply(lambda x: 'Converted' if 'Administered' in str(x) else 'Cancelled')
             
-            appointment_match_data['Service Date'] = pd.to_datetime(appointment_match_data['Service Date']).dt.normalize().astype(object)
-            appointment_match_data['Start Time'] = pd.to_datetime(appointment_match_data['Start Time']).dt.strftime('%H:%M:%S').astype('object')
-            appointment_match_data['End Time'] = pd.to_datetime(appointment_match_data['End Time']).dt.strftime('%H:%M:%S').astype('object')
+            appointment_match_data['Service Date'] = pd.to_datetime(appointment_match_data['Service Date']).dt.normalize().astype('object')
+            appointment_match_data['Start Time'] = pd.to_datetime(appointment_match_data['End Time'], errors='coerce').dt.strftime('%I:%M%p').astype('object')
+            appointment_match_data['End Time'] = pd.to_datetime(appointment_match_data['Start Time'], errors='coerce').dt.strftime('%I:%M%p').astype('object')
+            appointment_match_data['ID Number'] = appointment_match_data['ID Number'].astype('object')
+            appointment_match_data['Student Name'] = appointment_match_data['Student Name'].astype('object')
+            appointment_match_data['Status'] = appointment_match_data['Status'].astype('object')
             
             rsm_data['Student Name'] = rsm_data['Student Name'].astype('object')
             rsm_data['Service Name'] = rsm_data['Service Name'].astype('object')
             rsm_data['Delivery Status'] = rsm_data['Delivery Status'].astype('object')
-            rsm_data['Service Date'] = pd.to_datetime(rsm_data['Service Date']).dt.normalize().astype(object)
-            rsm_data['ID Number'] = rsm_data['ID Student'].astype('object')
-            rsm_data['Start Time'] = pd.to_datetime(rsm_data['Start Time']).dt.strftime('%H:%M:%S').astype('object')
-            rsm_data['End Time'] = pd.to_datetime(rsm_data['End Time']).dt.strftime('%H:%M:%S').astype('object')
+            rsm_data['Service Date'] = pd.to_datetime(rsm_data['Service Date']).dt.normalize().astype('object')
+            rsm_data['ID Number'] = rsm_data['ID Number'].astype('object')
+            rsm_data['Start Time'] = pd.to_datetime(rsm_data['Start Time'], format='%H:%M:%S', errors='coerce').dt.strftime('%I:%M%p').astype('object')
+            rsm_data['End Time'] = pd.to_datetime(rsm_data['End Time'], format='%H:%M:%S', errors='coerce').dt.strftime('%I:%M%p').astype('object')
 
-            rsm_data = pd.merge(rsm_data, appointment_match_data[["Therapist", "EmploymentType"]], 
-                                on='Therapist', how='left')
+            rsm_data = pd.merge(rsm_data, appointment_match_data[["Provider", "EmploymentType"]], 
+                                on='Provider', how='left')
             
             if employment_type:
-                rsm_data = rsm_data[rsm_data['EmploymentType'] == employment_type]
+                rsm_data = rsm_data[rsm_data['EmploymentType'].isin(employment_type)]
 
             for df in [appointment_match_data, rsm_data]:
                 for col in df.select_dtypes(include=['object']).columns:
                     df[col] = df[col].astype(str).str.strip()
                     df[col] = df[col].astype('object')
             
-                for col in ['Provider', 'StudentFirstName', 'StudentLastName']:
+                for col in ['Provider', 'Student Name']:
                     if col in df.columns:
                         df[col] = df[col].astype(str).str.upper()
                         df[col] = df[col].str.replace(r'\s*(JR\.|SR\.|III|II|IV)\s*$', '', regex=True)
+                        df[col] = df[col].str.replace('-', ' ', regex=False)
                         df[col] = df[col].astype('object')
             
-            time_diffs, missing_from = find_time_discrepancies(appointment_match_data, rsm_data)
+            time_diffs, missing_from, status_diffs = find_time_discrepancies(appointment_match_data, rsm_data)
 
             appointment_match_data.drop_duplicates(inplace=True)
             rsm_data.drop_duplicates(inplace=True)
@@ -80,12 +85,13 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
                 rsm_data.to_excel(writer, sheet_name="RSM Data", index=False)
                 missing_from.to_excel(writer, sheet_name="Missing From RSM", index=False)
                 time_diffs.to_excel(writer, sheet_name="Time Discrepancies", index=False)
+                status_diffs.to_excel(writer, sheet_name="Status Discrepancies", index=False)
 
             output_file.seek(0)
             return output_file
         else:
-            appointment_match_data['Therapy Start Time'] = appointment_match_data['Therapy Start Time'].dt.strftime('%m/%d/%Y %I:%M%p')
-            appointment_match_data['Therapy End Time'] = appointment_match_data['Therapy End Time'].dt.strftime('%m/%d/%Y %I:%M%p')
+            appointment_match_data['Start Time'] = appointment_match_data['Start Time'].dt.strftime('%m/%d/%Y %I:%M%p')
+            appointment_match_data['End Time'] = appointment_match_data['End Time'].dt.strftime('%m/%d/%Y %I:%M%p')
             
             output_file = io.BytesIO()
             appointment_match_data.to_excel(output_file, index=False)
@@ -101,90 +107,233 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
 
 def find_time_discrepancies(cr_data, rsm_data):
     aligned_cr_data = cr_data[
-        ['Therapist', 'Student ID', 'First Name', 'Last Name', 'Date of Service', 'Therapy Start Time', 'Therapy End Time', 'Status', 'CancellationReason']    
+        ['Provider', 'ID Number', 'Student Name', 'BillingCode', 'BillingDesc', 'Service Date', 'Start Time', 'End Time', 'Status', 'CancellationReason']    
     ]
     aligned_rsm_data = rsm_data[
-        ['Therapist', 'Student ID', 'First Name', 'Last Name', 'Date of Service', 'Therapy Start Time', 'Therapy End Time']        
+        ['Provider', 'ID Number', 'Student Name', 'Service Date', 'Start Time', 'End Time', 'Status']        
     ]
 
     time_diffs = find_time_diffs(aligned_cr_data, aligned_rsm_data)
     missing_from  = find_missing_from(aligned_cr_data, aligned_rsm_data, time_diffs)
+    status_diffs = find_status_diffs(aligned_cr_data, aligned_rsm_data, missing_from)
 
-    return time_diffs, missing_from
+    time_diffs = time_diffs.style.applymap(highlight_diff_type_cells, subset=['DiscrepancyType'])
 
-def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
-    merged_df = pd.merge(aligned_match_data, aligned_et_data, on=["Therapist", "First Name", "Last Name", "Student ID", "Date of Service", "Therapy End Time"], how="left", suffixes=("_CR", "_RSM"))
-    
-    missing_from_et_df = merged_df[merged_df["Therapy Start Time_RSM"].isna()]
+    return time_diffs, missing_from, status_diffs
 
-    missing_from_et_df["DiscrepancyType"] = "Missing from RSM"
+def find_missing_from(aligned_match_data, aligned_rsm_data, time_diffs):
+    merged_df = pd.merge(aligned_match_data, aligned_rsm_data, on=["Provider", "Student Name", "Status", "ID Number", "Service Date", "End Time"], how="left", suffixes=("_CR", "_RSM"))
     
-    missing_from_et_df['Date of Service'] = pd.to_datetime(missing_from_et_df['Date of Service']).dt.strftime('%m/%d/%Y').astype(object)
+    missing_from_rsm_df = merged_df[merged_df["Start Time_RSM"].isna()]
+
+    missing_from_rsm_df["DiscrepancyType"] = "Missing from RSM"
     
-    discrepancy_df = merged_df = pd.merge(missing_from_et_df, time_diffs, on=["Therapist", "First Name", "Last Name", "Student ID", "Date of Service", "Therapy Start Time_CR"], how="left", indicator=True)
+    missing_from_rsm_df['Service Date'] = pd.to_datetime(missing_from_rsm_df['Service Date']).dt.strftime('%m/%d/%Y').astype(object)
+    
+    discrepancy_df = merged_df = pd.merge(missing_from_rsm_df, time_diffs, on=["Provider", "Student Name", "ID Number", "Status", "Service Date", "Start Time_CR"], how="left", indicator=True, suffixes=("_CR", "_RSM"))
     
     discrepancy_df = discrepancy_df[merged_df['_merge'] == 'left_only']
     
     discrepancy_df.drop(columns=['_merge'], inplace=True)
 
-    discrepancy_df = discrepancy_df[["Therapist", "First Name", "Last Name", 
-                                         "Student ID", "Status_x", "Date of Service",
-                                         "Therapy Start Time_CR", "Therapy End Time"]]
+    discrepancy_df = discrepancy_df[["Provider", "Student Name", 
+                                         "ID Number", "BillingCode_CR", "Status", "Service Date",
+                                         "Start Time_CR", "End Time", "CancellationReason_CR"]]
     
-    discrepancy_df = discrepancy_df[discrepancy_df['Status_x'] != 'Un-Converted']
+    discrepancy_df = discrepancy_df[discrepancy_df['Status'] != 'Un-Converted']
     
     discrepancy_df.drop_duplicates(inplace=True)
     
-    discrepancy_df['Date of Service'] = pd.to_datetime(discrepancy_df['Date of Service']).dt.strftime('%m/%d/%Y').astype(object)
+    #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     
-    discrepancy_df = discrepancy_df.sort_values(by=['Therapist', 'First Name', 'Date of Service'], ascending=True)
+    discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'Student Name', 'Service Date'], ascending=True)
+
+    #discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA CLASSROOM']
+    #discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA SEL GROUP']
+    #discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA SOCIAL SKILLS']
     
     return discrepancy_df
 
-def find_time_diffs(aligned_cr_data, aligned_rsm_data):
-    cr_copy = aligned_cr_data.copy()
-    rsm_copy = aligned_rsm_data.copy()
+def find_time_diffs(cr_copy, rsm_copy):
+    cr_copy = cr_copy.copy()
+    rsm_copy = rsm_copy.copy()
 
-    cr_copy["Therapy Start Time_Hour"] = pd.to_datetime(cr_copy["Therapy Start Time"]).dt.hour
-    cr_copy["Therapy Start Time_Minute"] = pd.to_datetime(cr_copy["Therapy Start Time"]).dt.minute
-    cr_copy["Therapy End Time_Hour"] = pd.to_datetime(cr_copy["Therapy End Time"]).dt.hour
-    cr_copy["Therapy End Time_Minute"] = pd.to_datetime(cr_copy["Therapy End Time"]).dt.minute
+    start_merge = find_start_time_diffs(cr_copy, rsm_copy)
+    end_merge = find_end_time_diffs(cr_copy, rsm_copy)
+
+    cr_copy["StartTime_Hour"] = pd.to_datetime(cr_copy["Start Time"], errors='coerce').dt.hour
+    cr_copy["StartTime_Minute"] = pd.to_datetime(cr_copy["Start Time"], errors='coerce').dt.minute
+    cr_copy["EndTime_Hour"] = pd.to_datetime(cr_copy["End Time"], errors='coerce').dt.hour
+    cr_copy["EndTime_Minute"] = pd.to_datetime(cr_copy["End Time"], errors='coerce').dt.minute
     
-    rsm_copy["Therapy Start Time_Hour"] = pd.to_datetime(rsm_copy["Therapy Start Time"]).dt.hour
-    rsm_copy["Therapy Start Time_Minute"] = pd.to_datetime(rsm_copy["Therapy Start Time"]).dt.minute
-    rsm_copy["Therapy End Time_Hour"] = pd.to_datetime(rsm_copy["Therapy End Time"]).dt.hour
-    rsm_copy["Therapy End Time_Minute"] = pd.to_datetime(rsm_copy["Therapy End Time"]).dt.minute
+    rsm_copy["StartTime_Hour"] = pd.to_datetime(rsm_copy["Start Time"], errors='coerce').dt.hour
+    rsm_copy["StartTime_Minute"] = pd.to_datetime(rsm_copy["Start Time"], errors='coerce').dt.minute
+    rsm_copy["EndTime_Hour"] = pd.to_datetime(rsm_copy["End Time"], errors='coerce').dt.hour
+    rsm_copy["EndTime_Minute"] = pd.to_datetime(rsm_copy["End Time"], errors='coerce').dt.minute
 
-    aligned_cr_data.drop_duplicates(inplace=True)
-    aligned_rsm_data.drop_duplicates(inplace=True)
-
-    merged = pd.merge(cr_copy, rsm_copy, on=['Therapist', 'Student ID', 'First Name', 'Last Name', 'Date of Service', "Therapy Start Time_Hour", "Therapy End Time_Hour"], how="outer", suffixes=("_CR", "_RSM"))
+    merged = pd.merge(cr_copy, rsm_copy, on=["Provider", "Student Name", "ID Number", "Status", "Service Date", "StartTime_Hour", "EndTime_Hour"], how="outer", suffixes=("_CR", "_RSM"))
 
     minute_match_condition = (
-        (merged["Therapy Start Time_Minute_CR"] == merged["Therapy Start Time_Minute_RSM"]) |
-        (merged["Therapy End Time_Minute_CR"] == merged["Therapy End Time_Minute_RSM"])
+        (merged["StartTime_Minute_CR"] == merged["StartTime_Minute_RSM"]) |
+        (merged["EndTime_Minute_CR"] == merged["EndTime_Minute_RSM"])
     )
 
-    merged = merged.dropna(subset=["Therapy Start Time_CR", "Therapy Start Time_RSM", "Therapy End Time_CR", "Therapy End Time_RSM"])
+    merged = merged.dropna(subset=["Start Time_CR", "Start Time_RSM", "End Time_CR", "End Time_RSM"])
     
     merged["DiscrepancyType"] = None
 
-    start_time_minute_diff = (merged["Therapy Start Time_Minute_CR"] != merged["Therapy Start Time_Minute_RSM"]) & minute_match_condition
+    start_time_minute_diff = (merged["StartTime_Minute_CR"] != merged["StartTime_Minute_RSM"]) & minute_match_condition
     merged.loc[start_time_minute_diff, "DiscrepancyType"] = "Time(Start)"
 
-    end_time_minute_diff = (merged["Therapy End Time_Minute_CR"] != merged["Therapy End Time_Minute_RSM"]) & minute_match_condition
+    end_time_minute_diff = (merged["EndTime_Minute_CR"] != merged["EndTime_Minute_RSM"]) & minute_match_condition
     merged.loc[end_time_minute_diff, "DiscrepancyType"] = "Time(End)"
 
     merged["DiscrepancyType"] = merged["DiscrepancyType"].fillna("No Discrepancy")
     
-    discrepancy_df = merged[["Therapist", "First Name", "Last Name", "Student ID", "Date of Service", 'Status', 'CancellationReason', 
-                             "Therapy Start Time_CR", "Therapy Start Time_RSM", "Therapy End Time_CR", "Therapy End Time_RSM", "DiscrepancyType"]]
+    discrepancy_df = merged[["Provider", "Student Name", "ID Number", "BillingCode", "Service Date", 'Status', 'CancellationReason', 
+                         "Start Time_CR", "Start Time_RSM", "End Time_CR", "End Time_RSM", "DiscrepancyType"]]
 
-    time_diffs = discrepancy_df[discrepancy_df['DiscrepancyType'] != "No Discrepancy"]
+    discrepancy_df = discrepancy_df[discrepancy_df['DiscrepancyType'] != "No Discrepancy"]
     
-    time_diffs['Date of Service'] = pd.to_datetime(time_diffs['Date of Service']).dt.strftime('%m/%d/%Y').astype(object)
+    #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
 
-    time_diffs = time_diffs.sort_values(by=['Therapist', 'First Name', 'Date of Service'], ascending=True)
-    time_diffs.drop_duplicates(inplace=True)
+    start_merge.rename(columns={
+        'Start Time_CR': 'StartTime_CR_start_merge', 
+        'Start Time_RSM': 'StartTime_RSM_start_merge',
+        'End Time': 'EndTime_start_merge'
+    }, inplace=True)
 
-    return time_diffs
+    end_merge.rename(columns={
+        'Start Time': 'StartTime_end_merge',
+        'End Time_CR': 'EndTime_CR_end_merge',
+        'End Time_RSM': 'EndTime_RSM_end_merge'
+    }, inplace=True)
+
+    discrepancy_df = pd.merge(
+        discrepancy_df, 
+        start_merge, 
+        on=["Provider", "Student Name", "ID Number", "BillingCode", "Status", "Service Date", "CancellationReason"],
+        how='outer'
+    )
+
+    discrepancy_df = pd.merge(
+        discrepancy_df, 
+        end_merge, 
+        on=["Provider", "Student Name", "ID Number", "BillingCode", "Status", "Service Date", "CancellationReason"],
+        how='outer'
+    )
+    discrepancy_df.drop_duplicates(subset=['Provider', 'Student Name', 'ID Number', 'BillingCode', 'Service Date', 'Status', 'CancellationReason', 'DiscrepancyType'], inplace=True)
+
+    discrepancy_df['Start Time_CR'] = discrepancy_df['Start Time_CR'].fillna(discrepancy_df['StartTime_CR_start_merge']).fillna(discrepancy_df['StartTime_end_merge'])
+    discrepancy_df['Start Time_ET'] = discrepancy_df['Start Time_RSM'].fillna(discrepancy_df['StartTime_RSM_start_merge']).fillna(discrepancy_df['StartTime_end_merge'])
+    discrepancy_df['End Time_CR'] = discrepancy_df['End Time_CR'].fillna(discrepancy_df['EndTime_CR_end_merge']).fillna(discrepancy_df['EndTime_start_merge'])
+    discrepancy_df['End Time_ET'] = discrepancy_df['End Time_RSM'].fillna(discrepancy_df['EndTime_RSM_end_merge']).fillna(discrepancy_df['EndTime_start_merge'])
+    discrepancy_df['DiscrepancyType'] = discrepancy_df['DiscrepancyType'].fillna(discrepancy_df['DiscrepancyType_x']).fillna(discrepancy_df['DiscrepancyType_y'])
+
+    discrepancy_df.drop(columns=['DiscrepancyType_x', 'StartTime_CR_start_merge', 'StartTime_RSM_start_merge', 'EndTime_start_merge', 'DiscrepancyType_y', 'StartTime_end_merge', 'EndTime_CR_end_merge', 'EndTime_RSM_end_merge'], inplace=True)
+
+    overlapping_times = find_overlapping_appointments(cr_copy, rsm_copy)
+
+    discrepancy_df = pd.merge(discrepancy_df, overlapping_times, on=['Provider', 'Student Name', 'Service Date', 'Status', 'Start Time_CR', 'End Time_CR', 'Start Time_RSM', 'End Time_RSM'], how='outer')
+
+    discrepancy_df['DiscrepancyType'] = np.where(
+        discrepancy_df['Start Time_CR'] == discrepancy_df['Start Time_RSM'], "Time(End)", 
+        np.where(
+            discrepancy_df['End Time_CR'] == discrepancy_df['End Time_RSM'], "Time(Start)", 
+            "Overlapping"
+        )
+    )
+
+    discrepancy_df['BillingCode'] = discrepancy_df['BillingCode_x'].fillna(discrepancy_df['BillingCode_y'])
+    discrepancy_df['ID Number'] = discrepancy_df['ID Number'].fillna(discrepancy_df['ID Number_CR']).fillna(discrepancy_df['ID Number_RSM'])
+    discrepancy_df['CancellationReason'] = discrepancy_df['CancellationReason_x'].fillna(discrepancy_df['CancellationReason_y'])
+
+    discrepancy_df.drop(columns=['BillingCode_x', 'BillingCode_y', 'CancellationReason_x', 'ID Number_CR', 'ID Number_RSM', 'CancellationReason_y'], inplace=True)
+
+    discrepancy_df = discrepancy_df[["Provider", "Student Name", "ID Number", "BillingCode", "Service Date", 'Status', 'CancellationReason', 
+                     "Start Time_CR", "Start Time_RSM", "End Time_CR", "End Time_RSM", "DiscrepancyType"]]
+    
+    #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
+    discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'Student Name', 'Service Date'], ascending=True)
+    discrepancy_df.drop_duplicates(inplace=True)
+    
+    return discrepancy_df
+
+def find_start_time_diffs(cr_copy, rsm_copy):
+    merged_on_end = pd.merge(cr_copy, rsm_copy, on=["Provider", "Student Name", "ID Number", "Service Date", "End Time", "Status"], how="outer", suffixes=("_CR", "_RSM"))
+    
+    start_time_diff = (merged_on_end["Start Time_CR"] != merged_on_end["Start Time_RSM"])
+    
+    start_time_diff["DiscrepancyType"] = None
+    merged_on_end.loc[start_time_diff & merged_on_end["Start Time_CR"].notna() & merged_on_end["Start Time_RSM"].notna(), "DiscrepancyType"] = "Time(Start)"
+    
+    discrepancy_df = merged_on_end[["Provider", "Student Name", "ID Number", "BillingCode", "Service Date", 'Status', 'CancellationReason', 
+                                "Start Time_CR", "Start Time_RSM", "End Time", "DiscrepancyType"]]
+    
+    discrepancy_df = discrepancy_df.dropna(subset=["DiscrepancyType"])
+    
+    discrepancy_df['Service Date'] = pd.to_datetime(discrepancy_df['Service Date']).dt.strftime('%m/%d/%Y').astype(object)
+    discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'Student Name', 'Service Date'], ascending=True)
+    discrepancy_df.drop_duplicates(inplace=True)
+    
+    return discrepancy_df
+
+def find_end_time_diffs(cr_copy, rsm_copy):
+    merged_on_start = pd.merge(cr_copy, rsm_copy, on=["Provider", "Student Name", "ID Number", "Service Date", "Start Time", "Status"], how="outer", suffixes=("_CR", "_RSM"))
+    
+    end_time_diff = (merged_on_start["End Time_CR"] != merged_on_start["End Time_RSM"])
+    
+    end_time_diff["DiscrepancyType"] = None
+    merged_on_start.loc[end_time_diff & merged_on_start["End Time_CR"].notna() & merged_on_start["End Time_RSM"].notna(), "DiscrepancyType"] = "Time(End)"
+    
+    discrepancy_df = merged_on_start[["Provider", "Student Name", "ID Number", "BillingCode", "Service Date", 'Status', 'CancellationReason', 
+                                "Start Time", "End Time_CR", "End Time_RSM", "DiscrepancyType"]]
+    
+    discrepancy_df = discrepancy_df.dropna(subset=["DiscrepancyType"])
+    
+    discrepancy_df['Service Date'] = pd.to_datetime(discrepancy_df['Service Date']).dt.strftime('%m/%d/%Y').astype(object)
+    discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'Student Name', 'Service Date'], ascending=True)
+    discrepancy_df.drop_duplicates(inplace=True)
+    
+    return discrepancy_df
+
+def find_overlapping_appointments(cr_copy, rsm_copy):
+    merged = pd.merge(cr_copy, rsm_copy, on=["Provider", "Student Name", "Status", "Service Date"], 
+                      suffixes=('_CR', '_RSM'), how='outer')
+    
+    merged["Start Time_CR"] = pd.to_datetime(merged["Start Time_CR"], format='%I:%M%p').dt.strftime('%H:%M')
+    merged["End Time_CR"] = pd.to_datetime(merged["End Time_CR"], format='%I:%M%p').dt.strftime('%H:%M')
+    merged["Start Time_RSM"] = pd.to_datetime(merged["Start Time_RSM"], format='%I:%M%p').dt.strftime('%H:%M')
+    merged["End Time_RSM"] = pd.to_datetime(merged["End Time_RSM"], format='%I:%M%p').dt.strftime('%H:%M')
+    
+    overlap_condition = (
+        (merged["Start Time_CR"] < merged["End Time_RSM"]) & (merged["Start Time_CR"] > merged["Start Time_RSM"]) |
+        (merged["End Time_CR"] < merged["End Time_RSM"]) & (merged["End Time_CR"] > merged["Start Time_RSM"]) | 
+        (merged["Start Time_RSM"] < merged["End Time_CR"]) & (merged["Start Time_RSM"] > merged["Start Time_CR"]) |
+        (merged["End Time_RSM"] < merged["End Time_CR"]) & (merged["End Time_RSM"] > merged["Start Time_CR"])
+    )
+
+    overlap_df = merged[overlap_condition]
+    
+    overlap_df["Start Time_CR"] = pd.to_datetime(overlap_df["Start Time_CR"], format='%H:%M').dt.strftime('%I:%M%p').astype('object')
+    overlap_df["End Time_CR"] = pd.to_datetime(overlap_df["End Time_CR"], format='%H:%M').dt.strftime('%I:%M%p').astype('object')
+    overlap_df["Start Time_RSM"] = pd.to_datetime(overlap_df["Start Time_RSM"], format='%H:%M').dt.strftime('%I:%M%p').astype('object')
+    overlap_df["End Time_RSM"] = pd.to_datetime(overlap_df["End Time_RSM"], format='%H:%M').dt.strftime('%I:%M%p').astype('object')
+    
+    return overlap_df
+
+def find_status_diffs(cr_copy, rsm_copy, missing_from):
+    #missing_from['StartTime'] = missing_from['StartTime_CR']
+    merged = pd.merge(cr_copy, rsm_copy, on=['Provider', 'Student Name', 'ID Number', 'Service Date', 'Start Time', 'End Time'], how='inner', suffixes=('_CR', '_RSM'))
+    status_diffs = merged[merged['Status_CR'] != merged['Status_RSM']]
+    return status_diffs
+
+def highlight_diff_type_cells(val):
+    if val == 'Time(Start)':
+        return 'background-color: #99ff99'
+    elif val == 'Time(End)':
+        return 'background-color: #9999ff'
+    elif val == 'Overlapping':
+        return 'background-color: #ff9999'
+    else:
+        return ''
