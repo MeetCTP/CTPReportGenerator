@@ -40,6 +40,12 @@ service_keywords = {
     'Speech V': [r'Speech Therapist.*(Face to Face|Virtual)'],
     'Assessments': [r'.*Assessment.*'],
     'Indirect Services': [r'.*Indirect.*', r'.*IEP.*', r'.*Progress Report.*'],
+    'BHT-ABA': [],
+    'BC-ABA': [],
+    'Family Guidance': [],
+    'BHT': [],
+    'BC': [],
+    'Mobile Therapy': [],
 }
 
 def get_week_bounds(date):
@@ -88,6 +94,15 @@ def generate_school_util_report(start_date, end_date):
             WHERE ServiceDate BETWEEN '{query_start}' AND '{query_end}'
         """
         data = pd.read_sql_query(query, engine)
+
+        data.drop_duplicates(inplace=True)
+
+        ins_query = f"""
+            SELECT *
+            FROM InsuranceClinicalUtil
+            WHERE AppStart BETWEEN '{query_start}' AND '{query_end}'
+        """
+        ins_data = pd.read_sql_query(ins_query, engine)
 
         data.drop_duplicates(inplace=True)
 
@@ -157,6 +172,7 @@ def generate_school_util_report(start_date, end_date):
             client_counts.to_excel(writer, sheet_name='# of Clients', index=False)
             event_hours.to_excel(writer, sheet_name='# of Hours', index=False)
             service_hours.to_excel(writer, sheet_name='# of Clients by Service', index=False)
+            ins_data.to_excel(writer, sheet_name='Ins Data', index=False)
 
         output_file.seek(0)
         return output_file
