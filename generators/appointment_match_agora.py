@@ -304,6 +304,11 @@ def find_time_diffs(cr_copy, et_copy):
     #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
     discrepancy_df.drop_duplicates(inplace=True)
+
+    discrepancy_df = discrepancy_df[
+        (discrepancy_df['StartTime_CR'] != discrepancy_df['StartTime_ET']) |
+        (discrepancy_df['EndTime_CR'] != discrepancy_df['EndTime_ET'])
+    ]
     
     return discrepancy_df
 
