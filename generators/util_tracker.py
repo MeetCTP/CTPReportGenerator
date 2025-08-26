@@ -189,16 +189,22 @@ def generate_util_tracker(start_date, end_date, company_role):
         if company_role == 'Contractor':
             data['ProviderInitial'] = data['Provider'].str[0].str.upper()
             aj_data = data[data['ProviderInitial'].between('A', 'J')]
-            kz_data = data[data['ProviderInitial'].between('K', 'Z')]
+            kr_data = data[data['ProviderInitial'].between('K', 'R')]
+            st_data = data[data['ProviderInitial'].between('S', 'T')]
+            uz_data = data[data['ProviderInitial'].between('U', 'Z')]
+
+            kr_uz_data = pd.concat([kr_data, uz_data], ignore_index=True)
 
             aj_data = aj_data.drop(columns=['ProviderInitial'])
-            kz_data = kz_data.drop(columns=['ProviderInitial'])
+            kr_uz_data = kr_uz_data.drop(columns=['ProviderInitial'])
+            st_data = st_data.drop(columns=['ProviderInitial'])
             
             output_file = io.BytesIO()
             
             with ExcelWriter(output_file, engine='openpyxl') as writer:
                 aj_data.to_excel(writer, sheet_name='A-J', index=False)
-                kz_data.to_excel(writer, sheet_name='K-Z', index=False)
+                kr_uz_data.to_excel(writer, sheet_name='K-Z', index=False)
+                st_data.to_excel(writer, sheet_name='S-T', index=False)
             
             output_file.seek(0)
             return output_file
