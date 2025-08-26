@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Cases Formatting Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script defer>
+        const logoUrl = "{{ url_for('static', filename='css/assets/cropped-ctp-loading-logo.jpg') }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/open-cases.js') }}" defer></script>
+</head>
+<body>
+    <main class="container-blk">
+        <section>
+            <h1>Open Cases Formatting Report</h1>
+            <nav class="report-nav">
+                <a href="http://ctphome/report-generator">Back to Reports</a>
+                <a href="http://ctphome">Home</a>
+            </nav>
+        </section>
+        <section>
+            <form id="report-form">
+                <label for="excel-file">Upload School Report File:</label>
+                <input type="file" id="excel-file" name="excel-file" accept=".xlsx, .csv" required>
+                <button id="generate" type="button">Generate Report</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

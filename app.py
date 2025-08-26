@@ -27,6 +27,8 @@ from generators.original_insight_report import generate_original_insight_report
 from generators.monthly_at_report import get_all_at_tables
 from generators.valid_emails import generate_valid_email_report
 from generators.school_utilization import generate_school_util_report
+from generators.invoice_billing_report import generate_invoice_billing_report
+from generators.open_cases_format import generate_open_cases_report
 from generators.no_contact_list import merge_and_push_NC
 from generators.code_look_up import code_search
 from flask_cors import CORS
@@ -443,6 +445,14 @@ def appt_overlap():
 @app.route('/report-generator/school-util')
 def school_util():
     return render_template('school-util.html')
+
+@app.route('/report-generator/invoice-report')
+def invoice_report():
+    return render_template('invoice_report.html')
+
+@app.route('/report-generator/open-cases')
+def open_cases():
+    return render_template('open-cases.html')
 
 @app.route('/report-generator/school-matching/generate-report', methods=['POST'])
 def handle_generate_school_matching_report():
@@ -891,3 +901,40 @@ def handle_generate_school_util_report():
             return jsonify({"error": str(e)}), 500
     else:
         return jsonify({'error': 'Unsupported Media Type'}), 415
+
+@app.route('/report-generator/invoice-report/generate-report', methods=['POST'])
+def handle_generate_invoice_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        school = data.get('school')
+
+        try:
+            report_file = generate_invoice_billing_report(start_date, end_date, school)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=f"School_Invoice_'{school}'.xlsx"
+            )
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
+
+@app.route('/report-generator/open-cases/generate-report', methods=['POST'])
+def handle_generate_open_cases_report():
+    file = request.files.get('file')
+
+    if not file:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    try:
+        report_file = generate_open_cases_report(file)
+        return send_file(
+            report_file,
+            as_attachment=True,
+            download_name="Formatted_Open_Cases.xlsx"
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
