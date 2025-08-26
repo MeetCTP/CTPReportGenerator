@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
 from pandas import ExcelWriter
-from fuzzywuzzy import fuzz
+from fuzzywuzzy import fuzz, process
 import re
 import pymssql
 import openpyxl
@@ -38,6 +38,45 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
         if rsm_file:
             rsm_file.seek(0)
             rsm_data = pd.read_excel(rsm_file)
+
+            # Normalize the uploaded RSM file into expected structure
+            if "Student First Name" in rsm_data.columns:
+                # Build Student Name as "First M Last"
+                rsm_data["Student Name"] = (
+                    rsm_data["Student First Name"].astype(str).str.strip()
+                    + " "
+                    + rsm_data["Student Middle Name"].fillna("").astype(str).str.strip().str[:1]
+                    + np.where(rsm_data["Student Middle Name"].notna() & (rsm_data["Student Middle Name"].str.strip() != ""), " ", "")
+                    + rsm_data["Student Last Name"].astype(str).str.strip()
+                ).str.replace("  ", " ")  # clean double spaces
+
+                # Build Provider as "First Last"
+                rsm_data["Provider"] = (
+                    rsm_data["Provider First Name"].astype(str).str.strip()
+                    + " "
+                    + rsm_data["Provider Last Name"].astype(str).str.strip()
+                )
+
+                # Map long structure into expected short structure
+                column_mapping = {
+                    "ID": "ID",
+                    "Status": "Status",
+                    "Service Date": "Service Date",
+                    "ID Number": "ID Number",
+                    "Student Name": "Student Name",
+                    "Service Name": "Service Name",
+                    "Delivery Status": "Delivery Status",
+                    "Start Time": "Start Time",
+                    "End Time": "End Time",
+                    "Duration": "Duration",
+                    "Billable Units": "Decimal",  # if this is the same meaning
+                    "Provider": "Provider",
+                    "Updated At": "Updated At"
+                }
+
+                # Keep only what you need
+                rsm_data = rsm_data[[col for col in column_mapping.keys() if col in rsm_data.columns]].rename(columns=column_mapping)
+
             rsm_data = rsm_data.sort_values(by=['Provider', 'Student Name'], ascending=True)
             rsm_data['Status'] = rsm_data['Delivery Status'].apply(lambda x: 'Converted' if 'Administered' in str(x) else 'Cancelled')
             
@@ -73,6 +112,8 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
                         df[col] = df[col].str.replace(r'\s*(JR\.|SR\.|III|II|IV)\s*$', '', regex=True)
                         df[col] = df[col].str.replace('-', ' ', regex=False)
                         df[col] = df[col].astype('object')
+
+            rsm_data = normalize_names_with_reference(rsm_data, appointment_match_data)
             
             time_diffs, missing_from, status_diffs = find_time_discrepancies(appointment_match_data, rsm_data)
 
@@ -104,6 +145,27 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
 
     finally:
         engine.dispose()
+
+def normalize_names_with_reference(rsm_data, appointment_match_data, threshold=90):
+    ref_names = appointment_match_data["Student Name"].astype(str).unique().tolist()
+    
+    normalized_names = []
+    match_scores = []
+    
+    for raw_name in rsm_data["Student Name"].astype(str):
+        match, score = process.extractOne(raw_name, ref_names, scorer=fuzz.token_set_ratio)
+        
+        if score >= threshold:
+            normalized_names.append(match)  # canonical form from reference
+        else:
+            normalized_names.append(raw_name)  # fallback: keep original
+        
+        match_scores.append(score)  # keep score for auditing
+    
+    rsm_data["Student Name (Normalized)"] = normalized_names
+    rsm_data["Name Match Score"] = match_scores
+    
+    return rsm_data
 
 def find_time_discrepancies(cr_data, rsm_data):
     aligned_cr_data = cr_data[
@@ -256,6 +318,11 @@ def find_time_diffs(cr_copy, rsm_copy):
     #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'Student Name', 'Service Date'], ascending=True)
     discrepancy_df.drop_duplicates(inplace=True)
+
+    discrepancy_df = discrepancy_df[
+        (discrepancy_df['Start Time_CR'] != discrepancy_df['Start Time_RSM']) |
+        (discrepancy_df['End Time_CR'] != discrepancy_df['End Time_RSM'])
+    ]
     
     return discrepancy_df
 
