@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Invoice Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/invoice-report.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>School Invoice Report</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <label for="start_date">App Start Date:</label>
+                <input type="date" id="start_date" name="start_date" required>
+                <label for="end_date">App End Date:</label>
+                <input type="date" id="end_date" name="end_date" required>
+            
+                <select id="school" name="school">
+                    <option value="">Select Schools</option>
+                    <option value="Agora">Agora</option>
+                    <option value="CCA">Commonwealth Charter Academy</option>
+                    <option value="AH">Achievement House</option>
+                    <option value="Elwyn">Elwyn</option>
+                    <option value="PAD">PA Distance</option>
+                    <option value="Insight">Insight</option>
+                    <option value="Reach">Reach</option>
+                    <option value="PAVirtual">PA Virtual</option>
+                    <option value="PALCS">PALCS</option>
+                    <option value="DelCoIntermediate">Delaware Co Intermediate Unit</option>
+                    <option value="CPDLF">Central PA Digital Learning Foundation</option>
+                    <option value="PACyber">PA Cyber</option>
+                    <option value="Gettysburg">Gettysburg Montessori</option>
+                </select>
+            
+                <button onClick="generateReport()" type="button">Generate Report</button>
+            </form>
+        </div>
+    </div>
+    <section class="desc-container">
+        <h2 class="in-bl">Report Description</h2>
+        <p class="report-desc">
+            This report serves to pull data from CR and format it to fit the needs of each school for invoicing purposes.
+            <br>
+            <span class="warning">Some Central Reach labels may be inaccurate due to duplicates in their system.</span>
+        </p>
+    </section>
+</body>
+</html>
