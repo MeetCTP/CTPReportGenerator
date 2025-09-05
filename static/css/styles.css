@@ -744,6 +744,13 @@ main {
     border: 2px outset #000;
 }
 
+#suggestion {
+    font-weight: bold;
+    background-color: #fdf913;
+    color: #000;
+
+}
+
 #company-logo {
     animation: rotateLogo 3s infinite linear;
     z-index: 100;
