@@ -287,9 +287,9 @@ def find_time_diffs(cr_copy, rsm_copy):
     discrepancy_df.drop_duplicates(subset=['Provider', 'Student Name', 'ID Number', 'BillingCode', 'Service Date', 'Status', 'CancellationReason', 'DiscrepancyType'], inplace=True)
 
     discrepancy_df['Start Time_CR'] = discrepancy_df['Start Time_CR'].fillna(discrepancy_df['StartTime_CR_start_merge']).fillna(discrepancy_df['StartTime_end_merge'])
-    discrepancy_df['Start Time_ET'] = discrepancy_df['Start Time_RSM'].fillna(discrepancy_df['StartTime_RSM_start_merge']).fillna(discrepancy_df['StartTime_end_merge'])
-    discrepancy_df['End Time_CR'] = discrepancy_df['End Time_CR'].fillna(discrepancy_df['EndTime_CR_end_merge']).fillna(discrepancy_df['EndTime_start_merge'])
-    discrepancy_df['End Time_ET'] = discrepancy_df['End Time_RSM'].fillna(discrepancy_df['EndTime_RSM_end_merge']).fillna(discrepancy_df['EndTime_start_merge'])
+    discrepancy_df['Start Time_RSM'] = discrepancy_df['Start Time_RSM'].fillna(discrepancy_df['StartTime_RSM_start_merge']).fillna(discrepancy_df['StartTime_end_merge'])
+    discrepancy_df['End Time_CR'] = discrepancy_df['End Time_CR'].fillna(discrepancy_df['EndTime_start_merge']).fillna(discrepancy_df['EndTime_CR_end_merge'])
+    discrepancy_df['End Time_RSM'] = discrepancy_df['End Time_RSM'].fillna(discrepancy_df['EndTime_RSM_end_merge']).fillna(discrepancy_df['EndTime_start_merge'])
     discrepancy_df['DiscrepancyType'] = discrepancy_df['DiscrepancyType'].fillna(discrepancy_df['DiscrepancyType_x']).fillna(discrepancy_df['DiscrepancyType_y'])
 
     discrepancy_df.drop(columns=['DiscrepancyType_x', 'StartTime_CR_start_merge', 'StartTime_RSM_start_merge', 'EndTime_start_merge', 'DiscrepancyType_y', 'StartTime_end_merge', 'EndTime_CR_end_merge', 'EndTime_RSM_end_merge'], inplace=True)

@@ -29,7 +29,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
         """
         appointment_match_data = pd.read_sql_query(appointment_match_query, engine)
 
-        appointment_match_data.drop_duplicates(inplace=True)
+        appointment_match_data.drop_duplicates(subset=['Provider', 'StudentFirstName', 'StudentLastName', 'ServiceDate', 'BillingCode', 'StartTime', 'EndTime', 'Status'], inplace=True)
         appointment_match_data.drop('School', axis=1, inplace=True)
         
         if employment_type:
@@ -351,17 +351,17 @@ def find_end_time_diffs(cr_copy, et_copy):
     return discrepancy_df
 
 def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
-    merged_df = pd.merge(aligned_match_data, aligned_et_data, on=["Provider", "StudentFirstName", "StudentLastName", "Status", "StudentCode", "ServiceDate", "EndTime"], how="left", suffixes=("_CR", "_ET"))
+    merged_df = pd.merge(aligned_match_data, aligned_et_data, on=["Provider", "StudentFirstName", "StudentLastName", "Status", "StudentCode", "ServiceDate", "StartTime", "EndTime"], how="left", suffixes=("_CR", "_ET"))
     
     missing_from_et_df = merged_df[merged_df["StartTime_ET"].isna()]
 
     missing_from_et_df["DiscrepancyType"] = "Missing from ET"
     
-    missing_from_et_df['ServiceDate'] = pd.to_datetime(missing_from_et_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
+    #missing_from_et_df['ServiceDate'] = pd.to_datetime(missing_from_et_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     
-    discrepancy_df = merged_df = pd.merge(missing_from_et_df, time_diffs, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "Status", "ServiceDate", "StartTime_CR"], how="left", indicator=True, suffixes=("_CR", "_ET"))
+    discrepancy_df = pd.merge(missing_from_et_df, time_diffs, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "Status", "ServiceDate", "StartTime_CR"], how="left", indicator=True, suffixes=("_CR", "_ET"))
     
-    discrepancy_df = discrepancy_df[merged_df['_merge'] == 'left_only']
+    discrepancy_df = discrepancy_df[discrepancy_df['_merge'] == 'left_only']
     
     discrepancy_df.drop(columns=['_merge'], inplace=True)
 
