@@ -29,7 +29,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
         """
         appointment_match_data = pd.read_sql_query(appointment_match_query, engine)
 
-        appointment_match_data.drop_duplicates(subset=['Provider', 'StudentFirstName', 'StudentLastName', 'ServiceDate', 'BillingCode', 'StartTime', 'EndTime', 'Status'], inplace=True)
+        appointment_match_data.drop_duplicates(inplace=True)
         appointment_match_data.drop('School', axis=1, inplace=True)
         
         if employment_type:
@@ -243,8 +243,6 @@ def find_time_diffs(cr_copy, et_copy):
 
     discrepancy_df = discrepancy_df[discrepancy_df['DiscrepancyType'] != "No Discrepancy"]
     
-    #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
-
     start_merge.rename(columns={
         'StartTime_CR': 'StartTime_CR_start_merge', 
         'StartTime_ET': 'StartTime_ET_start_merge',
@@ -278,7 +276,7 @@ def find_time_diffs(cr_copy, et_copy):
     discrepancy_df['EndTime_ET'] = discrepancy_df['EndTime_ET'].fillna(discrepancy_df['EndTime_ET_end_merge']).fillna(discrepancy_df['EndTime_start_merge'])
     discrepancy_df['DiscrepancyType'] = discrepancy_df['DiscrepancyType'].fillna(discrepancy_df['DiscrepancyType_x']).fillna(discrepancy_df['DiscrepancyType_y'])
 
-    discrepancy_df.drop(columns=['DiscrepancyType_x', 'StartTime_CR_start_merge', 'StartTime_ET_start_merge', 'EndTime_start_merge', 'DiscrepancyType_y', 'StartTime_end_merge', 'EndTime_CR_end_merge', 'EndTime_ET_end_merge'], inplace=True)
+    discrepancy_df.drop(columns=['DiscrepancyType_x', 'StartTime_CR_start_merge', 'StartTime_ET_start_merge', 'EndTime_start_merge', 'DiscrepancyType_y', 'StartTime_end_merge', 'EndTime_CR_end_merge', 'EndTime_ET_end_merge'], inplace=True) 
 
     overlapping_times = find_overlapping_appointments(cr_copy, et_copy)
 
@@ -304,64 +302,91 @@ def find_time_diffs(cr_copy, et_copy):
     #discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
     discrepancy_df.drop_duplicates(inplace=True)
-
-    discrepancy_df = discrepancy_df[
-        (discrepancy_df['StartTime_CR'] != discrepancy_df['StartTime_ET']) |
-        (discrepancy_df['EndTime_CR'] != discrepancy_df['EndTime_ET'])
-    ]
     
     return discrepancy_df
 
 def find_start_time_diffs(cr_copy, et_copy):
-    merged_on_end = pd.merge(cr_copy, et_copy, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", "EndTime", "Status"], how="outer", suffixes=("_CR", "_ET"))
-    
-    start_time_diff = (merged_on_end["StartTime_CR"] != merged_on_end["StartTime_ET"])
-    
-    start_time_diff["DiscrepancyType"] = None
-    merged_on_end.loc[start_time_diff & merged_on_end["StartTime_CR"].notna() & merged_on_end["StartTime_ET"].notna(), "DiscrepancyType"] = "Time(Start)"
-    
-    discrepancy_df = merged_on_end[["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "BillingCode", "ServiceDate", 'Status', 'CancellationReason', 
-                                "StartTime_CR", "StartTime_ET", "EndTime", "DiscrepancyType"]]
-    
-    discrepancy_df = discrepancy_df.dropna(subset=["DiscrepancyType"])
-    
-    discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
-    discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
+    merged_on_end = pd.merge(
+        cr_copy, et_copy,
+        on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", "EndTime", "Status"],
+        how="outer",
+        suffixes=("_CR", "_ET")
+    )
+
+    # Initialize discrepancy column
+    merged_on_end["DiscrepancyType"] = pd.NA
+
+    # Condition for mismatched start times
+    mask = (
+        (merged_on_end["StartTime_CR"] != merged_on_end["StartTime_ET"])
+        & merged_on_end["StartTime_CR"].notna()
+        & merged_on_end["StartTime_ET"].notna()
+    )
+    merged_on_end.loc[mask, "DiscrepancyType"] = "Time(Start)"
+
+    # Keep only relevant columns
+    discrepancy_df = merged_on_end[
+        ["Provider", "StudentFirstName", "StudentLastName", "StudentCode",
+         "BillingCode", "ServiceDate", "Status", "CancellationReason",
+         "StartTime_CR", "StartTime_ET", "EndTime", "DiscrepancyType"]
+    ]
+
+    # Keep only rows where discrepancy exists
+    discrepancy_df = discrepancy_df[discrepancy_df["DiscrepancyType"].notna()].reset_index(drop=True)
+
+    # Format date and sort
+    discrepancy_df["ServiceDate"] = pd.to_datetime(discrepancy_df["ServiceDate"]).dt.strftime("%m/%d/%Y").astype(object)
+    discrepancy_df = discrepancy_df.sort_values(by=["Provider", "StudentFirstName", "ServiceDate"], ascending=True)
     discrepancy_df.drop_duplicates(inplace=True)
-    
+
     return discrepancy_df
 
 def find_end_time_diffs(cr_copy, et_copy):
-    merged_on_start = pd.merge(cr_copy, et_copy, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", "StartTime", "Status"], how="outer", suffixes=("_CR", "_ET"))
-    
-    end_time_diff = (merged_on_start["EndTime_CR"] != merged_on_start["EndTime_ET"])
-    
-    end_time_diff["DiscrepancyType"] = None
-    merged_on_start.loc[end_time_diff & merged_on_start["EndTime_CR"].notna() & merged_on_start["EndTime_ET"].notna(), "DiscrepancyType"] = "Time(End)"
-    
-    discrepancy_df = merged_on_start[["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "BillingCode", "ServiceDate", 'Status', 'CancellationReason', 
-                                "StartTime", "EndTime_CR", "EndTime_ET", "DiscrepancyType"]]
-    
-    discrepancy_df = discrepancy_df.dropna(subset=["DiscrepancyType"])
-    
-    discrepancy_df['ServiceDate'] = pd.to_datetime(discrepancy_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
-    discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
+    merged_on_start = pd.merge(
+        cr_copy, et_copy,
+        on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "ServiceDate", "StartTime", "Status"],
+        how="outer",
+        suffixes=("_CR", "_ET")
+    )
+
+    # Create the discrepancy flag
+    merged_on_start["DiscrepancyType"] = pd.NA
+    mask = (
+        (merged_on_start["EndTime_CR"] != merged_on_start["EndTime_ET"])
+        & merged_on_start["EndTime_CR"].notna()
+        & merged_on_start["EndTime_ET"].notna()
+    )
+    merged_on_start.loc[mask, "DiscrepancyType"] = "Time(End)"
+
+    # Keep only relevant columns
+    discrepancy_df = merged_on_start[
+        ["Provider", "StudentFirstName", "StudentLastName", "StudentCode",
+         "BillingCode", "ServiceDate", "Status", "CancellationReason",
+         "StartTime", "EndTime_CR", "EndTime_ET", "DiscrepancyType"]
+    ]
+
+    # Drop rows where DiscrepancyType is still NA
+    discrepancy_df = discrepancy_df[discrepancy_df["DiscrepancyType"].notna()].reset_index(drop=True)
+
+    # Format and sort
+    discrepancy_df["ServiceDate"] = pd.to_datetime(discrepancy_df["ServiceDate"]).dt.strftime("%m/%d/%Y").astype(object)
+    discrepancy_df = discrepancy_df.sort_values(by=["Provider", "StudentFirstName", "ServiceDate"], ascending=True)
     discrepancy_df.drop_duplicates(inplace=True)
-    
+
     return discrepancy_df
 
 def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
-    merged_df = pd.merge(aligned_match_data, aligned_et_data, on=["Provider", "StudentFirstName", "StudentLastName", "Status", "StudentCode", "ServiceDate", "StartTime", "EndTime"], how="left", suffixes=("_CR", "_ET"))
+    merged_df = pd.merge(aligned_match_data, aligned_et_data, on=["Provider", "StudentFirstName", "StudentLastName", "Status", "StudentCode", "ServiceDate", "EndTime"], how="left", suffixes=("_CR", "_ET"))
     
     missing_from_et_df = merged_df[merged_df["StartTime_ET"].isna()]
 
     missing_from_et_df["DiscrepancyType"] = "Missing from ET"
     
-    #missing_from_et_df['ServiceDate'] = pd.to_datetime(missing_from_et_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
+    missing_from_et_df['ServiceDate'] = pd.to_datetime(missing_from_et_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     
-    discrepancy_df = pd.merge(missing_from_et_df, time_diffs, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "Status", "ServiceDate", "StartTime_CR"], how="left", indicator=True, suffixes=("_CR", "_ET"))
+    discrepancy_df = merged_df = pd.merge(missing_from_et_df, time_diffs, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "Status", "ServiceDate", "StartTime_CR"], how="left", indicator=True, suffixes=("_CR", "_ET"))
     
-    discrepancy_df = discrepancy_df[discrepancy_df['_merge'] == 'left_only']
+    discrepancy_df = discrepancy_df[merged_df['_merge'] == 'left_only']
     
     discrepancy_df.drop(columns=['_merge'], inplace=True)
 
@@ -377,7 +402,7 @@ def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
     
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'StudentFirstName', 'ServiceDate'], ascending=True)
 
-    discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA CLASSROOM']
+    #discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA CLASSROOM']
     discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA SEL GROUP']
     #discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA SOCIAL SKILLS']
     
