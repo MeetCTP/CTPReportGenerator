@@ -22,6 +22,18 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
         range_start_101 = datetime.strptime(range_start, '%Y-%m-%d')
         range_end_101 = datetime.strptime(range_end, '%Y-%m-%d')
 
+        employee_providers = [
+            'Cathleen DiMaria',
+            'Christine Veneziale',
+            'Jacqui Maxwell',
+            'Jessica Trudeau',
+            'Kaitlin Konopka',
+            'Kristie Girten',
+            'Nicole Morrison', 
+            'Roseanna Vellner',
+            'Terri Ahern'
+        ]
+
         appointment_match_query = f"""
             SELECT DISTINCT *
             FROM EasyTracSessionComparison
