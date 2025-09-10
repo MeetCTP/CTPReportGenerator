@@ -37,15 +37,21 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
         appointment_match_query = f"""
             SELECT DISTINCT *
             FROM EasyTracSessionComparison
-            WHERE CONVERT(DATE, ServiceDate, 101) BETWEEN '{range_start_101}' AND '{range_end_101}'
+            WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{range_start_101}' AND '{range_end_101}')
         """
+
+        if 'Employee' in employment_type and not 'Contractor' in employment_type:
+            appointment_match_query += f""" AND (Provider IN ({', '.join([f"'{s}'" for s in employee_providers])}))"""
+        elif 'Contractor' in employment_type and not 'Employee' in employment_type:
+            appointment_match_query += f""" AND (Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])}))"""
+
         appointment_match_data = pd.read_sql_query(appointment_match_query, engine)
 
         appointment_match_data.drop_duplicates(inplace=True)
         appointment_match_data.drop('School', axis=1, inplace=True)
         
-        if employment_type:
-            appointment_match_data = appointment_match_data[appointment_match_data['EmploymentType'].isin(employment_type)]
+        #if employment_type:
+        #   appointment_match_data = appointment_match_data[appointment_match_data['EmploymentType'].isin(employment_type)]
         
         if et_file:
             et_file.seek(0)
@@ -68,11 +74,11 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
             et_data['EndTime'] = pd.to_datetime(et_data['EndTime'], format='%H:%M:%S').dt.strftime('%I:%M%p').astype('object')
             et_data['DateTimeSigned'] = pd.to_datetime(et_data['DateTimeSigned'], format='%m/%d/%Y %I:%M:%S %p')
             
-            et_data = pd.merge(et_data, appointment_match_data[['Provider', 'EmploymentType']], 
-                        on='Provider', how='left')
+            #et_data = pd.merge(et_data, appointment_match_data[['Provider', 'EmploymentType']], 
+            #            on='Provider', how='left')
             
-            if employment_type:
-                et_data = et_data[et_data['EmploymentType'].isin(employment_type)]
+            #if employment_type:
+            #    et_data = et_data[et_data['EmploymentType'].isin(employment_type)]
                 
             for df in [appointment_match_data, et_data]:
                 for col in df.select_dtypes(include=['object']).columns:

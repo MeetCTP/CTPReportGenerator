@@ -39,13 +39,19 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
             FROM InsightSessionComparison
             WHERE CONVERT(DATE, [Service Date], 101) BETWEEN '{range_start_101}' AND '{range_end_101}'
         """
+
+        if 'Employee' in employment_type and not 'Contractor' in employment_type:
+            appointment_match_query += f""" AND (Provider IN ({', '.join([f"'{s}'" for s in employee_providers])}))"""
+        elif 'Contractor' in employment_type and not 'Employee' in employment_type:
+            appointment_match_query += f""" AND (Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])}))"""
+
         appointment_match_data = pd.read_sql_query(appointment_match_query, engine)
 
         appointment_match_data.drop_duplicates(inplace=True)
         appointment_match_data.drop('School', axis=1, inplace=True)
         
-        if employment_type:
-            appointment_match_data = appointment_match_data[appointment_match_data['EmploymentType'].isin(employment_type)]
+        #if employment_type:
+        #    appointment_match_data = appointment_match_data[appointment_match_data['EmploymentType'].isin(employment_type)]
 
         if rsm_file:
             rsm_file.seek(0)
@@ -57,8 +63,8 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
                 rsm_data["Student Name"] = (
                     rsm_data["Student First Name"].astype(str).str.strip()
                     + " "
-                    + rsm_data["Student Middle Name"].fillna("").astype(str).str.strip().str[:1]
-                    + np.where(rsm_data["Student Middle Name"].notna() & (rsm_data["Student Middle Name"].str.strip() != ""), " ", "")
+                    #+ rsm_data["Student Middle Name"].fillna("").astype(str).str.strip().str[:1]
+                    #+ np.where(rsm_data["Student Middle Name"].notna() & (rsm_data["Student Middle Name"].str.strip() != ""), " ", "")
                     + rsm_data["Student Last Name"].astype(str).str.strip()
                 ).str.replace("  ", " ")  # clean double spaces
 
@@ -107,11 +113,11 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
             rsm_data['Start Time'] = pd.to_datetime(rsm_data['Start Time'], format='%H:%M:%S', errors='coerce').dt.strftime('%I:%M%p').astype('object')
             rsm_data['End Time'] = pd.to_datetime(rsm_data['End Time'], format='%H:%M:%S', errors='coerce').dt.strftime('%I:%M%p').astype('object')
 
-            rsm_data = pd.merge(rsm_data, appointment_match_data[["Provider", "EmploymentType"]], 
-                                on='Provider', how='left')
+            #rsm_data = pd.merge(rsm_data, appointment_match_data[["Provider", "EmploymentType"]], 
+            #                    on='Provider', how='left')
             
-            if employment_type:
-                rsm_data = rsm_data[rsm_data['EmploymentType'].isin(employment_type)]
+            #if employment_type:
+            #    rsm_data = rsm_data[rsm_data['EmploymentType'].isin(employment_type)]
 
             for df in [appointment_match_data, rsm_data]:
                 for col in df.select_dtypes(include=['object']).columns:
@@ -135,8 +141,8 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
             output_file = io.BytesIO()
             with ExcelWriter(output_file, engine='openpyxl') as writer:
                 appointment_match_data.to_excel(writer, sheet_name="CR Data", index=False)
-                rsm_data.to_excel(writer, sheet_name="RSM Data", index=False)
-                missing_from.to_excel(writer, sheet_name="Missing From RSM", index=False)
+                rsm_data.to_excel(writer, sheet_name="Portal Data", index=False)
+                missing_from.to_excel(writer, sheet_name="Missing From Portal", index=False)
                 time_diffs.to_excel(writer, sheet_name="Time Discrepancies", index=False)
                 status_diffs.to_excel(writer, sheet_name="Status Discrepancies", index=False)
 
