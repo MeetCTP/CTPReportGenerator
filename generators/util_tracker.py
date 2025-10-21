@@ -66,6 +66,7 @@ def generate_util_tracker(start_date, end_date, company_role):
             'Jacqui Maxwell',
             'Jessica Trudeau',
             'Kaitlin Konopka',
+            'Kait Konopka',
             'Kristie Girten',
             'Nicole Morrison', 
             'Roseanna Vellner',
@@ -185,6 +186,8 @@ def generate_util_tracker(start_date, end_date, company_role):
                      'Category',
                      'Subcategory',
                      'ChangeNote']] 
+        
+        data = data[data["ServiceCode"] != "GPAT"]
 
         if company_role == 'Contractor':
             data['ProviderInitial'] = data['Provider'].str[0].str.upper()

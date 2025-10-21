@@ -135,6 +135,8 @@ def generate_school_util_report(start_date, end_date):
 
         data.drop_duplicates(inplace=True)
 
+        data = data[data['ServiceCodeDescription'] != 'GPAT']
+
         def get_week_label(date):
             if start_of_two_weeks_ago <= date <= end_of_two_weeks_ago:
                 return f"Two Weeks Ago ({start_of_two_weeks_ago.strftime('%m/%d')}-{end_of_two_weeks_ago.strftime('%m/%d')})"
