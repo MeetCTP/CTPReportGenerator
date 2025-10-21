@@ -86,17 +86,19 @@ megan = f"Megan.Leighton"
 deborah = f"Deborah.Debrule"
 kim = f"Kimberly.D.Trate"
 ashley = f"Ashley.D.James"
+ashley_alt = f"Ashley.James"
 erica = f"Erica.N.Wetzel"
+sarah = f"Sarah.E.McMickle"
 
 #Groups
 admin_group = [lisa, admin, dan]
 recruiting_group = [amy, kim]
-clinical_group = []
+clinical_group = [erica, ashley, ashley_alt]
 accounting_group = [eileen, deborah]
-student_services_group = [erica, ashley]
+student_services_group = [erica, ashley, ashley_alt, sarah]
 human_resources_group = [aaron, linda]
-testing_group = [josh, fabian, megan, cari, ashley]
-site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy, ashley]
+testing_group = [josh, fabian, megan, cari, ashley, ashley_alt]
+site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy, ashley, ashley_alt]
 
 def handle_submit_form_data(table, data):
     if table == 'News_Posts':
@@ -309,10 +311,11 @@ def delete_item():
 def site_mod_page():
     username = request.environ.get('REMOTE_USER')
     username = str(username).split('\\')[-1]
-    if username in site_mod_group:
-        return render_template('site_mod.html')
-    else:
-        return redirect(url_for('access_denied'))
+    #if username in site_mod_group:
+    #    return render_template('site_mod.html')
+    #else:
+    #    return redirect(url_for('access_denied'))
+    return render_template('site_mod.html')
 
 @app.route('/set/submit-form-data', methods=['POST'])
 def submit_form_data():
@@ -349,7 +352,7 @@ def submit_form_data():
 @app.route('/report-generator')
 def reports():
     """Renders the reports home page template to the /reports url."""
-    username = request.environ.get('REMOTE_USER')
+    """username = request.environ.get('REMOTE_USER')
     username = str(username).split('\\')[-1]
     if username in admin_group:
         return render_template('all-prod-reports.html')
@@ -367,6 +370,8 @@ def reports():
         return render_template('all-reports.html')
     else:
         return redirect(url_for('access_denied'))
+        """
+    return render_template('all-reports.html')
     
 @app.route('/hipaa-training')
 def hipaa_stuff():

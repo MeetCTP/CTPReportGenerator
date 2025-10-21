@@ -49,7 +49,7 @@
                 {% for qa in weekly_qas %}
                     <div class="item-container-other">
                         <div class="qa-item">
-                            <p class="question">{{ qa.Body }}
+                            <p class="question">{{ qa.Body | safe }}
                                 {% if is_mod %}
                                     <button class="delete-btn" data-id="{{qa.Id}}" name="WeeklyQA">Delete</button>
                                 {% endif %}
@@ -72,7 +72,7 @@
                         </div>
                     </div>
                 {% else %}
-                    <p>Weekly question and responses</p>
+                    <p>Office Discussion Board</p>
                 {% endfor %}
             </div>
         </div>
