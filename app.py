@@ -909,23 +909,22 @@ def handle_generate_school_util_report():
 
 @app.route('/report-generator/invoice-report/generate-report', methods=['POST'])
 def handle_generate_invoice_report():
-    if request.headers['Content-Type'] == 'application/json':
-        data = request.get_json()
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
-        school = data.get('school')
+    input_file = request.files.get('input_file')
+    lcns_file = request.files.get('lcns_file')
+    school = request.form.get('school')
 
-        try:
-            report_file = generate_invoice_billing_report(start_date, end_date, school)
-            return send_file(
-                report_file,
-                as_attachment=True,
-                download_name=f"School_Invoice_'{school}'.xlsx"
-            )
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-    else:
-        return jsonify({'error': 'Unsupported Media Type'}), 415
+    if not input_file or not school:
+        return jsonify({'error': 'Missing required fields: input_file or school'}), 400
+
+    try:
+        report_file = generate_invoice_billing_report(input_file, lcns_file, school)
+        return send_file(
+            report_file,
+            as_attachment=True,
+            download_name=f"School_Invoice_'{school}'.xlsx"
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/report-generator/open-cases/generate-report', methods=['POST'])
 def handle_generate_open_cases_report():

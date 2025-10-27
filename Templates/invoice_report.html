@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Invoice Report</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script defer>
+        const logoUrl = "{{ url_for('static', filename='css/assets/cropped-ctp-loading-logo.jpg') }}";
+    </script>
     <script src="{{ url_for('static', filename='js/invoice-report.js') }}"></script>
 </head>
 <body>
@@ -16,10 +19,10 @@
         </nav>
         <div>
             <form id="report-form">
-                <label for="start_date">App Start Date:</label>
-                <input type="date" id="start_date" name="start_date" required>
-                <label for="end_date">App End Date:</label>
-                <input type="date" id="end_date" name="end_date" required>
+                <label for="excel-file">Upload Raw CR File:</label>
+                <input type="file" id="input_file" name="input_file-file" accept=".csv, .xlsx" required>
+                <label for="excel-file">Upload No Show Late Cancel Report File (Optional):</label>
+                <input type="file" id="lcns_file" name="excel-lcns_file" accept=".xlsx">
             
                 <select id="school" name="school">
                     <option value="">Select Schools</option>
@@ -38,7 +41,7 @@
                     <option value="Gettysburg">Gettysburg Montessori</option>
                 </select>
             
-                <button onClick="generateReport()" type="button">Generate Report</button>
+                <button id="generate" type="button">Generate Report</button>
             </form>
         </div>
     </div>
