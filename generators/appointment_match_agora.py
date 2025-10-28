@@ -201,7 +201,7 @@ def find_time_discrepancies(et_data, appointment_match_data, et_virtual):
     
     missing_from = missing_from[merged_df['_merge'] == 'left_only']
 
-    missing_from.drop(columns=['_merge', 'Type', 'Status_ET', 'CancellationReason', 'Status_CR', 'StartTime', 'BillingDesc', 'StudentCode_ET', 'BillingCode'], inplace=True)
+    missing_from.drop(columns=['_merge', 'Type', 'Status_ET', 'CancellationReason', 'Status_CR', 'StartTime', 'BillingDesc', 'BillingCode'], inplace=True)
 
     #type_diffs = find_type_diffs(aligned_match_data, aligned_et_data)
 
@@ -394,7 +394,7 @@ def find_end_time_diffs(cr_copy, et_copy):
     return discrepancy_df
 
 def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
-    merged_df = pd.merge(aligned_match_data, aligned_et_data, on=["Provider", "StudentFirstName", "StudentLastName", "Status", "StudentCode", "ServiceDate", "EndTime"], how="left", suffixes=("_CR", "_ET"))
+    merged_df = pd.merge(aligned_match_data, aligned_et_data, on=["Provider", "StudentFirstName", "StudentLastName", "Status", "ServiceDate", "EndTime"], how="left", suffixes=("_CR", "_ET"))
     
     missing_from_et_df = merged_df[merged_df["StartTime_ET"].isna()]
 
@@ -402,17 +402,19 @@ def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
     
     missing_from_et_df['ServiceDate'] = pd.to_datetime(missing_from_et_df['ServiceDate']).dt.strftime('%m/%d/%Y').astype(object)
     
-    discrepancy_df = merged_df = pd.merge(missing_from_et_df, time_diffs, on=["Provider", "StudentFirstName", "StudentLastName", "StudentCode", "Status", "ServiceDate", "StartTime_CR"], how="left", indicator=True, suffixes=("_CR", "_ET"))
+    discrepancy_df = merged_df = pd.merge(missing_from_et_df, time_diffs, on=["Provider", "StudentFirstName", "StudentLastName", "Status", "ServiceDate", "StartTime_CR"], how="left", indicator=True, suffixes=("_CR", "_ET"))
     
     discrepancy_df = discrepancy_df[merged_df['_merge'] == 'left_only']
     
     discrepancy_df.drop(columns=['_merge'], inplace=True)
 
     discrepancy_df = discrepancy_df[["Provider", "StudentFirstName", "StudentLastName", 
-                                         "StudentCode", "BillingCode_CR", "Status", "ServiceDate",
+                                         "StudentCode_CR", "BillingCode_CR", "Status", "ServiceDate",
                                          "StartTime_CR", "EndTime", "CancellationReason_CR"]]
     
     discrepancy_df = discrepancy_df[discrepancy_df['Status'] != 'Un-Converted']
+
+    discrepancy_df = resolve_classroom_discrepancies(discrepancy_df, aligned_et_data)
     
     discrepancy_df.drop_duplicates(inplace=True)
     
@@ -424,6 +426,38 @@ def find_missing_from(aligned_match_data, aligned_et_data, time_diffs):
     discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA SEL GROUP']
     #discrepancy_df = discrepancy_df[discrepancy_df['StudentFirstName'] != 'AGORA SOCIAL SKILLS']
     
+    return discrepancy_df
+
+def resolve_classroom_discrepancies(discrepancy_df, aligned_et_data):
+    """
+    Removes false positives from discrepancy_df where:
+      - In CR data: StudentFirstName == "AGORA CLASSROOM"
+      - StudentLastName in CR contains the actual student name
+      - In ET data: StudentFirstName contains "{StudentFirstName} {StudentLastName}"
+        and "Gr." text, while StudentLastName == "Classroom IA"
+      - ServiceDate, StartTime, and EndTime must match exactly.
+    """
+    rows_to_drop = []
+
+    for idx, row in discrepancy_df.iterrows():
+        if row["StudentFirstName"] == "AGORA CLASSROOM":
+            student_name = str(row["StudentLastName"]).strip()  # student full name from CR
+
+            # Build a mask for ET candidates on same date/times
+            et_candidates = aligned_et_data[
+                (aligned_et_data["ServiceDate"] == row["ServiceDate"]) &
+                (aligned_et_data["StartTime"] == row["StartTime_CR"]) &
+                (aligned_et_data["EndTime"] == row["EndTime"])
+            ]
+
+            for _, et_row in et_candidates.iterrows():
+                et_fullname = f"{et_row['StudentFirstName']} {et_row['StudentLastName']}"
+                if student_name in et_fullname and "Classroom" in et_fullname:
+                    rows_to_drop.append(idx)
+                    break  # stop at first valid match
+
+    # Drop the matched rows from discrepancy_df
+    discrepancy_df = discrepancy_df.drop(index=rows_to_drop).reset_index(drop=True)
     return discrepancy_df
 
 def find_overlapping_appointments(cr_copy, et_copy):
