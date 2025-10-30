@@ -103,14 +103,14 @@ def generate_school_util_report(start_date, end_date):
         end_date = datetime.strptime(end_date, '%Y-%m-%d')
 
         # Snap start_date to Monday of that week
-        start_of_current_week = start_date - timedelta(days=start_date.weekday())
+        start_of_current_week = start_date
 
         # Define previous weeks
         start_of_previous_week = start_of_current_week - timedelta(weeks=1)
         start_of_two_weeks_ago = start_of_current_week - timedelta(weeks=2)
 
         # Define ends (Sunday of each week)
-        end_of_current_week = start_of_current_week + timedelta(days=6)
+        end_of_current_week = end_date
         end_of_previous_week = start_of_previous_week + timedelta(days=6)
         end_of_two_weeks_ago = start_of_two_weeks_ago + timedelta(days=6)
 
