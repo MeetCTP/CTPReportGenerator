@@ -48,6 +48,7 @@ service_keywords = {
     'BHT': [r'Behavioral Health Technician.*non.*', r'Behavioral Health Technician'],
     'BC': [r'.*Behavior Consultation.*non ABA.*'],
     'Mobile Therapy': [r'.*Mobile Therapy.*non ABA.*'],
+    'GPAT': [r'.*Group Attendance.*'],
 }
 
 aba_pairs = {
@@ -134,8 +135,6 @@ def generate_school_util_report(start_date, end_date):
         ins_data = pd.read_sql_query(ins_query, engine)
 
         data.drop_duplicates(inplace=True)
-
-        data = data[data['ServiceCodeDescription'] != 'GPAT']
 
         def get_week_label(date):
             if start_of_two_weeks_ago <= date <= end_of_two_weeks_ago:
