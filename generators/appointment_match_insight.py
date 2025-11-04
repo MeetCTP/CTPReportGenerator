@@ -191,6 +191,39 @@ def normalize_names_with_reference(rsm_data, appointment_match_data, threshold=9
     
     return rsm_data
 
+def categorize_service(text):
+    if pd.isna(text):
+        return 'Unknown'
+    text = text.lower()
+    if 'bsc' in text or 'behavior specialist' in text:
+        if 'group' in text:
+            return 'BSC Group'
+        elif 'indiv' in text or 'individual' in text:
+            return 'BSC Individual'
+        elif 'progress report' in text:
+            return 'BSC Progress Report'
+        elif 'IEP' in text:
+            return 'BSC IEP Meeting'
+        elif 'consult' in text:
+            return 'BSC Consult'
+        else:
+            return 'BSC Other'
+    elif 'bcba' in text or 'behavior analyst' in text:
+        if 'group' in text:
+            return 'BCBA Group'
+        elif 'indiv' in text or 'individual' in text:
+            return 'BCBA Individual'
+        elif 'progress report' in text:
+            return 'BCBA Progress Report'
+        elif 'IEP' in text:
+            return 'BCBA IEP Meeting'
+        elif 'consult' in text:
+            return 'BCBA Consult'
+        else:
+            return 'BCBA Other'
+    else:
+        return 'Other'
+
 def find_time_discrepancies(cr_data, rsm_data):
     aligned_cr_data = cr_data[
         ['Provider', 'ID Number', 'Student Name', 'BillingCode', 'BillingDesc', 'Service Date', 'Start Time', 'End Time', 'Status', 'CancellationReason']    
@@ -474,42 +507,125 @@ def find_overlapping_appointments(cr_copy, rsm_copy):
     return overlap_df
 
 def find_bsc_bcba_discrepancies(rsm_df, cr_df):
+    # --- Convert times and calculate hours ---
     for df in [rsm_df, cr_df]:
         df['Start Time'] = pd.to_datetime(df['Start Time'], errors='coerce')
         df['End Time'] = pd.to_datetime(df['End Time'], errors='coerce')
-    
-    # Calculate total hours per row
-    rsm_df['Hours'] = (rsm_df['End Time'] - rsm_df['Start Time']).dt.total_seconds() / 3600
-    cr_df['Hours'] = (cr_df['End Time'] - cr_df['Start Time']).dt.total_seconds() / 3600
+        df['Hours'] = (df['End Time'] - df['Start Time']).dt.total_seconds() / 3600
 
-    # Group by Provider + Student Name, summing the total hours
+    # --- Categorize services ---
+    cr_df['ServiceCategory'] = cr_df['BillingDesc'].apply(categorize_service)
+    rsm_df['ServiceCategory'] = rsm_df['Service Name'].apply(categorize_service)
+
+    # --- Group and pivot RSM ---
     rsm_totals = (
-        rsm_df.groupby(['Provider', 'Student Name'], as_index=False)['Hours']
-        .sum()
-        .rename(columns={'Hours': 'TotalHours_RSM'})
-    )
-    cr_totals = (
-        cr_df.groupby(['Provider', 'Student Name'], as_index=False)['Hours']
-        .sum()
-        .rename(columns={'Hours': 'TotalHours_CR'})
+        rsm_df
+        .groupby(['Provider', 'Student Name', 'ServiceCategory', 'Status'], as_index=False)
+        .agg({'Hours': 'sum', 'Service Name': 'count'})
+        .rename(columns={'Service Name': 'Appointments'})
+        .pivot_table(
+            index=['Provider', 'Student Name', 'ServiceCategory'],
+            columns='Status',
+            values=['Hours', 'Appointments'],
+            fill_value=0
+        )
+        .reset_index()
     )
 
-    # Merge the totals on Provider + Student Name
+    # Flatten MultiIndex columns
+    rsm_totals.columns = ['_'.join(col).strip('_') for col in rsm_totals.columns.values]
+
+    # Guarantee both status columns exist
+    for col in ['Converted', 'Cancelled']:
+        for metric in ['Hours', 'Appointments']:
+            colname = f"{metric}_{col}"
+            if colname not in rsm_totals.columns:
+                rsm_totals[colname] = 0
+
+    # Rename columns for consistency
+    rsm_totals = rsm_totals.rename(columns={
+        'Hours_Converted': 'TotalConverted_RSM',
+        'Hours_Cancelled': 'TotalCancelled_RSM',
+        'Appointments_Converted': 'AppointmentsConverted_RSM',
+        'Appointments_Cancelled': 'AppointmentsCancelled_RSM'
+    })
+
+    # --- Group and pivot CR ---
+    cr_totals = (
+        cr_df
+        .groupby(['Provider', 'Student Name', 'ServiceCategory', 'Status'], as_index=False)
+        .agg({'Hours': 'sum', 'BillingDesc': 'count'})
+        .rename(columns={'BillingDesc': 'Appointments'})
+        .pivot_table(
+            index=['Provider', 'Student Name', 'ServiceCategory'],
+            columns='Status',
+            values=['Hours', 'Appointments'],
+            fill_value=0
+        )
+        .reset_index()
+    )
+
+    # Flatten MultiIndex columns
+    cr_totals.columns = ['_'.join(col).strip('_') for col in cr_totals.columns.values]
+
+    # Guarantee both status columns exist
+    for col in ['Converted', 'Cancelled']:
+        for metric in ['Hours', 'Appointments']:
+            colname = f"{metric}_{col}"
+            if colname not in cr_totals.columns:
+                cr_totals[colname] = 0
+
+    # Rename columns for consistency
+    cr_totals = cr_totals.rename(columns={
+        'Hours_Converted': 'TotalConverted_CR',
+        'Hours_Cancelled': 'TotalCancelled_CR',
+        'Appointments_Converted': 'AppointmentsConverted_CR',
+        'Appointments_Cancelled': 'AppointmentsCancelled_CR'
+    })
+
+    # --- Merge CR + RSM totals ---
     discrepancy_df = pd.merge(
         cr_totals, rsm_totals,
-        on=['Provider', 'Student Name'],
-        how='outer'  # include all pairs, even if missing from one dataset
+        on=['Provider', 'Student Name', 'ServiceCategory'],
+        how='outer'
+    ).fillna(0)
+
+    # --- Add metadata (BillingDesc + Service Name) ---
+    cr_meta = (
+        cr_df.groupby(['Provider', 'Student Name', 'ServiceCategory'], as_index=False)
+        [['BillingDesc']].first()
+    )
+    rsm_meta = (
+        rsm_df.groupby(['Provider', 'Student Name', 'ServiceCategory'], as_index=False)
+        [['Service Name']].first()
     )
 
-    # Fill NaN with 0 for easier comparison
-    discrepancy_df[['TotalHours_CR', 'TotalHours_RSM']] = discrepancy_df[
-        ['TotalHours_CR', 'TotalHours_RSM']
-    ].fillna(0)
+    discrepancy_df = (
+        discrepancy_df
+        .merge(cr_meta, on=['Provider', 'Student Name', 'ServiceCategory'], how='left')
+        .merge(rsm_meta, on=['Provider', 'Student Name', 'ServiceCategory'], how='left')
+    )
 
-    # Filter rows where total hours don’t match
-    #discrepancy_df = discrepancy_df[
-    #    discrepancy_df['TotalHours_CR'].round(2) != discrepancy_df['TotalHours_RSM'].round(2)
-    #]
+    # --- Compute total-hour and appointment columns for comparison ---
+    discrepancy_df['TotalHours_CR'] = discrepancy_df['TotalConverted_CR'] + discrepancy_df['TotalCancelled_CR']
+    discrepancy_df['TotalHours_RSM'] = discrepancy_df['TotalConverted_RSM'] + discrepancy_df['TotalCancelled_RSM']
+    discrepancy_df['TotalAppointments_CR'] = discrepancy_df['AppointmentsConverted_CR'] + discrepancy_df['AppointmentsCancelled_CR']
+    discrepancy_df['TotalAppointments_RSM'] = discrepancy_df['AppointmentsConverted_RSM'] + discrepancy_df['AppointmentsCancelled_RSM']
+
+    # --- Filter only mismatched totals (rounded to 2 decimals) ---
+    discrepancy_df = discrepancy_df[
+        discrepancy_df['TotalHours_CR'].round(2) != discrepancy_df['TotalHours_RSM'].round(2)
+    ]
+
+    # --- Reorder columns for clarity ---
+    cols = [
+        'Provider', 'Student Name', 'ServiceCategory',
+        'BillingDesc', 'Service Name',
+        'TotalConverted_CR', 'TotalCancelled_CR', 'TotalHours_CR',
+        'TotalConverted_RSM', 'TotalCancelled_RSM', 'TotalHours_RSM',
+        'TotalAppointments_CR', 'TotalAppointments_RSM'
+    ]
+    discrepancy_df = discrepancy_df[cols]
 
     return discrepancy_df
 
