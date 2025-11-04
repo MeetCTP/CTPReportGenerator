@@ -4,12 +4,18 @@ import numpy as np
 from pandas import ExcelWriter
 from flask import jsonify
 from sqlalchemy import create_engine
-import pymssql
+from dotenv import load_dotenv
 from openpyxl import load_workbook, Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
+import pymssql
+import smartsheet
 import re
 import io
 import os
+
+load_dotenv()
+TOKEN = os.getenv("SMARTSHEET_TOKEN")
+smartsheet_client = smartsheet.Smartsheet(TOKEN)
 
 def generate_open_cases_report(uploaded_file):
 
