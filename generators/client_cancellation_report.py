@@ -74,26 +74,29 @@ def generate_client_cancel_report(provider, client, cancel_reasons, start_date, 
                 WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{month_ranges[0][0].strftime('%Y-%m-%d')}' AND '{month_ranges[-1][1].strftime('%Y-%m-%d')}')
             """, engine).sort_values(by='ServiceDate', ascending=True)
 
-            three_cancels = check_three_cancels_in_a_row(all_data, cancel_reasons)
-            cancel_percentage = calculate_cancellation_percentage(all_data, cancel_reasons)
+            # Compute once for all data (only once outside loop)
+            if 'cancel_percentage' not in locals():
+                cancel_percentage = calculate_cancellation_percentage(all_data, cancel_reasons)
+                three_cancels = check_three_cancels_in_a_row(all_data, cancel_reasons)
 
-            # Create copies with only the relevant columns for each sheet
-            three_cancels_df = data.copy()
-            percentage_df = data.copy()
+            # Monthly data
+            raw_combined_data = pd.concat([raw_combined_data, data])
 
+            # Build Three Cancels sheet (subset of clients who met the 3-in-a-row condition)
             rows = []
-            for (client, provider), cancel_rows in three_cancels.items():
+            for (client_key, provider_key), cancel_rows in three_cancels.items():
                 for cancel_row in cancel_rows:
                     rows.append(cancel_row)
 
-            three_cancels_df = pd.DataFrame(rows)
+            if rows:
+                month_three_cancels_df = pd.DataFrame(rows)
+                three_cancels_combined = pd.concat([three_cancels_combined, month_three_cancels_df])
 
-            percentage_df[f'CancellationPercentage_{month_str}'] = percentage_df['Client'].map(cancel_percentage)
+            # Build Percentage sheet — include *all* clients from all_data, not just monthly data
+            month_percentage_df = all_data.copy()
+            month_percentage_df[f'CancellationPercentage_{month_str}'] = month_percentage_df['Client'].map(cancel_percentage)
 
-            # Append to each output dataframe
-            raw_combined_data = pd.concat([raw_combined_data, data])
-            three_cancels_combined = pd.concat([three_cancels_combined, three_cancels_df])
-            percentage_combined = pd.concat([percentage_combined, percentage_df])
+            percentage_combined = pd.concat([percentage_combined, month_percentage_df])
 
         # Final formatting
         for df in [raw_combined_data, three_cancels_combined, percentage_combined]:
