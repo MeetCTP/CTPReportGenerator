@@ -243,6 +243,8 @@ def pad_report(data, lcns_file):
                  'TimeWorkedInMins',
                  'Rate',
                  'Mileage']]
+
+    data = data.sort_values(by=['Student Name', 'Provider Name', 'Service Date'], ascending=True)
     return data
 
 def pa_cyber_report(data, lcns_file):
@@ -261,6 +263,8 @@ def pa_cyber_report(data, lcns_file):
     data['Student Name'] = data['ClientFirstName'].astype(str) + " " + data['ClientLastName'].astype(str)
     data['Therapist Name'] = data['ProviderFirstName'].astype(str) + " " + data['ProviderLastName'].astype(str)
     data['Service Type'] = data["ProcedureCodeDescription"].apply(lambda desc: apply_pac_service_rules(desc, rules))
+    lcns['DateOfService'] = pd.to_datetime(lcns['DateOfService'], errors='coerce')
+    data['DateOfService'] = pd.to_datetime(data['DateOfService'], errors='coerce')
 
     data = pd.merge(data, lcns, how='outer')
 
@@ -280,4 +284,7 @@ def pa_cyber_report(data, lcns_file):
                  'TimeWorkedInMins',
                  'Rate',
                  'Mileage']]
+    
+    data = data.sort_values(by=['Student Name', 'Therapist Name', 'Service Date'], ascending=True)
+
     return data
