@@ -277,6 +277,9 @@ def find_missing_from(aligned_match_data, aligned_rsm_data, time_diffs):
                                          "Start Time_CR", "End Time", "CancellationReason_CR"]]
     
     discrepancy_df = discrepancy_df[discrepancy_df['Status'] != 'Un-Converted']
+    discrepancy_df = discrepancy_df[
+        ~discrepancy_df['BillingCode_CR'].str.contains('BSC|BCBA', na=False)
+    ]
     
     discrepancy_df.drop_duplicates(inplace=True)
     
@@ -403,6 +406,9 @@ def find_time_diffs(cr_copy, rsm_copy):
     
     #discrepancy_df['Service Date'] = pd.to_datetime(discrepancy_df['Service Date']).dt.strftime('%m/%d/%Y')
     discrepancy_df = discrepancy_df.sort_values(by=['Provider', 'Student Name', 'Service Date'], ascending=True)
+    discrepancy_df = discrepancy_df[
+        ~discrepancy_df['BillingCode'].str.contains('BSC|BCBA', na=False)
+    ]
     discrepancy_df.drop_duplicates(inplace=True)
     
     return discrepancy_df
