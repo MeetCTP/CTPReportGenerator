@@ -205,7 +205,7 @@ def categorize_service(text):
         elif 'IEP' in text:
             return 'BSC IEP Meeting'
         elif 'consult' in text:
-            return 'BSC Consult'
+            return 'BSC Individual'
         else:
             return 'BSC Other'
     elif 'bcba' in text or 'behavior analyst' in text:
@@ -218,7 +218,7 @@ def categorize_service(text):
         elif 'IEP' in text:
             return 'BCBA IEP Meeting'
         elif 'consult' in text:
-            return 'BCBA Consult'
+            return 'BCBA Individual'
         else:
             return 'BCBA Other'
     else:
