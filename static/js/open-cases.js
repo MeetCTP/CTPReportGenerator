@@ -40,10 +40,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const excelFileInput = document.getElementById('excel-file');
         const file = excelFileInput.files[0];
+        const selectedSchool = document.getElementById('school').value;
+
+        if (!file || !selectedSchool) {
+            alert("Please select a file and a school before continuing.");
+            messageDiv.style.display = 'none';
+            return;
+        }
 
         const formData = new FormData();
         if (file) {
             formData.append('file', file);
+            formData.append('school', selectedSchool);
         }
 
         console.log("FormData Contents:");
@@ -54,40 +62,30 @@ document.addEventListener('DOMContentLoaded', function () {
         // Send request
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/report-generator/open-cases/generate-report', true);
-        xhr.responseType = 'blob';
+        xhr.responseType = 'json'; // Expect JSON now, not blob
 
         xhr.onreadystatechange = function () {
             if (xhr.readyState === XMLHttpRequest.DONE) {
-                if (xhr.status === 200) {
-                    // Detect response file type
-                    const contentType = xhr.getResponseHeader("Content-Type");
-                    let fileExtension = "xlsx"; // default
-                    if (contentType && contentType.includes("csv")) {
-                        fileExtension = "csv";
-                    }
+                messageDiv.style.display = 'none'; // Hide loading spinner either way
 
-                    const blob = new Blob([xhr.response], { type: contentType });
-                    const url = window.URL.createObjectURL(blob);
-
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `Formatted_Open_Cases.xlsx`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-
-                    messageDiv.style.display = 'none';
+                if (xhr.status === 200 && xhr.response && xhr.response.message) {
+                    alert(xhr.response.message); // ✅ Success
+                    console.log("✅ Success:", xhr.response.message);
+                } else if (xhr.response && xhr.response.error) {
+                    alert(`Error: ${xhr.response.error}`); // ❌ API error message
+                    console.error("Error:", xhr.response.error);
                 } else {
-                    const reader = new FileReader();
-                    reader.onload = function () {
-                        const errorMessage = reader.result;
-                        alert(`Error generating report: ${errorMessage}`);
-                        console.error('Error:', errorMessage);
-                    };
-                    reader.readAsText(xhr.response);
+                    alert("Unexpected error occurred. Please try again.");
+                    console.error("Unexpected response:", xhr.response);
                 }
             }
         };
+
+        xhr.onerror = function () {
+            messageDiv.style.display = 'none';
+            alert("Network error: Could not reach server.");
+        };
+        
         xhr.send(formData);
     }
 });

@@ -929,16 +929,14 @@ def handle_generate_invoice_report():
 @app.route('/report-generator/open-cases/generate-report', methods=['POST'])
 def handle_generate_open_cases_report():
     file = request.files.get('file')
+    school = request.form.get('school')
 
     if not file:
         return jsonify({'error': 'No file uploaded'}), 400
 
     try:
-        report_file = generate_open_cases_report(file)
-        return send_file(
-            report_file,
-            as_attachment=True,
-            download_name="Formatted_Open_Cases.xlsx"
-        )
+        # The function already returns (jsonify(message), status_code)
+        return generate_open_cases_report(file, school)
     except Exception as e:
+        print("Error in open cases route:", e)
         return jsonify({"error": str(e)}), 500

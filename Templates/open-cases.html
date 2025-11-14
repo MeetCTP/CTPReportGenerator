@@ -23,7 +23,15 @@
             <form id="report-form">
                 <label for="excel-file">Upload School Report File:</label>
                 <input type="file" id="excel-file" name="excel-file" accept=".xlsx, .csv" required>
-                <button id="generate" type="button">Generate Report</button>
+
+                <select id="school" name="school">
+                    <option value="">Select Schools</option>
+                    <option value="agora">Agora</option>
+                    <option value="cca">Commonwealth Charter Academy</option>
+                    <option value="insight">Insight</option>
+                </select>
+
+                <button id="generate" type="button">Upload to Smartsheet</button>
             </form>
         </section>
     </main>
