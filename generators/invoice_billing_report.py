@@ -85,7 +85,8 @@ SCHOOL_RULES = {
             "Print Materials": r"Print.*Materials",
         },
         'service': {
-            'Regular': r'.*Regular.*',
+            'Regular': r'(.*Regular.*Virtual.*|.*Regular.*Face to Face.*|.*Scheduled.*Virtual.*|.*Scheduled.*Face to Face.*)',
+            'Indirect': r'.*Indirect.*',
             'Make Up': r'.*Make Up.*',
             'No Show': r'.*No Show.*',
             'Late Cancel': r'.*Late Cancel.*',
