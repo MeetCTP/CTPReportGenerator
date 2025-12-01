@@ -21,15 +21,17 @@
         </section>
         <section>
             <form id="report-form">
-                <label for="excel-file">Upload School Report File:</label>
-                <input type="file" id="excel-file" name="excel-file" accept=".xlsx, .csv" required>
+                <label for="excel-file">*Upload CCA Report File:</label>
+                <input type="file" id="cca-file" name="excel-file" accept=".xlsx, .csv" required>
 
-                <select id="school" name="school">
-                    <option value="">Select Schools</option>
-                    <option value="agora">Agora</option>
-                    <option value="cca">Commonwealth Charter Academy</option>
-                    <option value="insight">Insight</option>
-                </select>
+                <label for="excel-file">*Upload Agora Report File:</label>
+                <input type="file" id="agora-file" name="excel-file" accept=".xlsx, .csv" required>
+
+                <label for="excel-file">*Upload Insight Report File:</label>
+                <input type="file" id="insight-file" name="excel-file" accept=".xlsx, .csv" required>
+
+                <label for="excel-file">Upload Custom Report File:</label>
+                <input type="file" id="other-file" name="excel-file" accept=".xlsx, .csv">
 
                 <button id="generate" type="button">Upload to Smartsheet</button>
             </form>

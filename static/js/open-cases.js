@@ -38,21 +38,22 @@ document.addEventListener('DOMContentLoaded', function () {
             document.body.appendChild(messageDiv);
         }
 
-        const excelFileInput = document.getElementById('excel-file');
-        const file = excelFileInput.files[0];
-        const selectedSchool = document.getElementById('school').value;
+        const ccaFile = document.getElementById('cca-file').files[0];
+        const agoraFile = document.getElementById('agora-file').files[0];
+        const insightFile = document.getElementById('insight-file').files[0];
+        const otherFile = document.getElementById('other-file').files[0];
 
-        if (!file || !selectedSchool) {
-            alert("Please select a file and a school before continuing.");
+        if (!ccaFile || !agoraFile || !insightFile) {
+            alert("Please upload all required report files before continuing.");
             messageDiv.style.display = 'none';
             return;
         }
 
         const formData = new FormData();
-        if (file) {
-            formData.append('file', file);
-            formData.append('school', selectedSchool);
-        }
+        formData.append('cca_file', ccaFile);
+        formData.append('agora_file', agoraFile);
+        formData.append('insight_file', insightFile);
+        formData.append('other_file', otherFile);
 
         console.log("FormData Contents:");
         formData.forEach((value, key) => {

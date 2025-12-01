@@ -30,47 +30,59 @@ service_keywords = {
     'Social Skills': [r'.*Social Skills.*'],
 }
 
-def generate_open_cases_report(uploaded_file, school):
-    if not uploaded_file:
-        return jsonify({'error': 'Could not read file'}), 415
-
+def generate_open_cases_report(cca_file, agora_file, insight_file, other_file):
     try:
-        filename = uploaded_file.filename.lower()
-        if filename.endswith('.csv'):
-            df = pd.read_csv(uploaded_file)
-        else:
-            df = pd.read_excel(uploaded_file)
+        # --- Load each file if present ---
+        dfs = []
 
-        match school:
-            case 'cca':
-                df = cca_referrals(df, school)
-            case 'agora':
-                df = agora_referrals(df, school)
-            case 'insight':
-                df = insight_referrals(df, school)
-            case _:
-                return jsonify({'message': f'Report for {school} could not be uploaded to Smartsheet. Please ensure you have uploaded the correct file.'}), 500
-            
-        if 'Location' in df.columns:
-            df['Location'] = df['Location'].apply(lambda x: normalize_location(x))
+        if cca_file:
+            df = load_referral_file(cca_file)
+            df = cca_referrals(df, "cca")
+            dfs.append(df)
 
-        df = normalize_group_individual(df, school)
-        df = normalize_school_column(df, school)
-        df = apply_service_normalization(df)
+        if agora_file:
+            df = load_referral_file(agora_file)
+            df = agora_referrals(df, "agora")
+            dfs.append(df)
 
-        try:
-            df[['Service']].to_csv('C:/temp/service_debug.csv', index=False)
-        except Exception as e:
-            pass  # don't fail if the directory doesn't exist
+        if insight_file:
+            df = load_referral_file(insight_file)
+            df = insight_referrals(df, "insight")
+            dfs.append(df)
 
-        push_to_smartsheet(df, "Open Case Referral Applications")
+        if other_file:
+            df = load_referral_file(other_file)
+            df = cca_referrals(df, "cca")
+            df['School'] = "Other"
+            dfs.append(df)
 
-        # --- return success message ---
-        return jsonify({'message': f'Report for {school} uploaded to Smartsheet successfully.'}), 200
+        # --- Merge all input files into one dataframe ---
+        if not dfs:
+            return jsonify({'error': 'No valid files uploaded.'}), 400
+
+        full_df = pd.concat(dfs, ignore_index=True)
+
+        # Normalizations
+        if 'Location' in full_df.columns:
+            full_df['Location'] = full_df['Location'].apply(normalize_location)
+
+        full_df = normalize_group_individual(full_df, "")
+        full_df = apply_service_normalization(full_df)
+
+        # Push to Smartsheet
+        push_to_smartsheet(full_df, "Open Case Referral Applications")
+
+        return jsonify({'message': 'All referrals processed and uploaded successfully.'}), 200
 
     except Exception as e:
-        print('Error occurred while generating the report: ', e)
-        raise e
+        print("Error:", e)
+        return jsonify({'error': str(e)}), 500
+    
+def load_referral_file(upload):
+    filename = upload.filename.lower()
+    if filename.endswith(".csv"):
+        return pd.read_csv(upload)
+    return pd.read_excel(upload)
     
 def cca_referrals(df, school):
     df.rename(columns={
@@ -112,7 +124,6 @@ def insight_referrals(df, school):
     return df
 
 def normalize_location(value):
-    """Normalize location values to Smartsheet dropdown options (F2F, Virtual)."""
     if pd.isna(value) or not str(value).strip():
         return ""
 
@@ -120,16 +131,14 @@ def normalize_location(value):
 
     # Multi-location match
     if "and" in val and "virtual" in val and ("face" in val or "f2f" in val or "in-person" in val):
-        # Means something like "Face to Face and/or Virtual"
-        return ["F2F", "Virtual"]
-
-    # Singular matches
+        return "F2F, Virtual"  # <- FIXED
+    
+    # Single-location matches
     if any(x in val for x in ["virtual", "online", "remote"]):
         return "Virtual"
     if any(x in val for x in ["f2f", "face", "in-person", "in person", "onsite", "on-site"]):
         return "F2F"
 
-    # Fallback — return the original so you can spot it in review
     return value
 
 def clean_county(value, remove_word=False):
@@ -232,10 +241,26 @@ def get_smartsheet():
     smartsheet_client.errors_as_exceptions(True)
     return smartsheet_client
 
+def clear_sheet(client, sheet_id):
+    """Delete all existing rows in the sheet before upload."""
+    sheet = client.Sheets.get_sheet(sheet_id)
+    row_ids = [row.id for row in sheet.rows]
+
+    if not row_ids:
+        print("Sheet already empty.")
+        return
+
+    # Smartsheet API allows batch delete up to 500 at a time
+    BATCH = 400
+    for i in range(0, len(row_ids), BATCH):
+        batch = row_ids[i:i+BATCH]
+        client.Sheets.delete_rows(sheet_id, batch)
+        print(f"Deleted {len(batch)} rows.")
+
 def push_to_smartsheet(df, sheet_name):
     client = get_smartsheet()
 
-    # 1️⃣ Get the correct sheet
+    # 🔹 Get the correct sheet
     sheet_list = client.Sheets.list_sheets(include_all=True)
     target_sheet = next((s for s in sheet_list.data if s.name == sheet_name), None)
     if not target_sheet:
@@ -243,48 +268,58 @@ def push_to_smartsheet(df, sheet_name):
 
     SHEET_ID = target_sheet.id
 
-    # 2️⃣ Fetch sheet columns and make name → ID map
+    # 🔹 CLEAR the sheet first
+    print(f"Clearing Smartsheet '{sheet_name}'...")
+    clear_sheet(client, SHEET_ID)
+    print("Sheet cleared.")
+
+    # 🔹 Fetch sheet columns and mapping
     sheet = client.Sheets.get_sheet(SHEET_ID)
     column_map = {col.title: col.id for col in sheet.columns}
 
-    # 4️⃣ Prepare rows for insertion
+    # 🔹 Prepare rows
     rows_to_add = []
+
     for _, record in df.iterrows():
         cells = []
         for col in df.columns:
             if col in column_map:
-                value = "" if pd.isna(record[col]) else str(record[col])
-                
-                # Get Smartsheet column type (so we can handle Multi-Picklists correctly)
-                col_type = next((c.type for c in sheet.columns if c.title == col), None)
-
-                # --- Handle MULTI_PICKLIST columns ---
-                if col_type == "MULTI_PICKLIST":
-                    # Convert things like "F2F Virtual" → "F2F, Virtual"
-                    if isinstance(value, str):
-                        # Normalize separators (split on spaces or semicolons)
-                        parts = re.split(r'[;,]\s*|\s+', value.strip())
-                        # Remove any empty strings and deduplicate
-                        parts = [p for p in parts if p]
-                        # Rejoin into comma-separated string
-                        value = ", ".join(parts)
-
-                # --- Build the cell ---
                 cell = models.Cell()
                 cell.column_id = column_map[col]
+
+                # Handle Hyperlink column
+                if col == "Apply Here":
+                    cell.value = "Apply Here"
+                    cell.hyperlink = models.Hyperlink(
+                        url="https://forms.office.com/pages/responsepage.aspx?id=lz_WkfQhpkOUXq_ZK7JpXxb-2YMqoyRCsildbVBwsaFURE0yTFhMT0dWOUM5TVJPREZFWk5EQldXSS4u&route=shorturl"
+                    )
+                    cells.append(cell)
+                    continue
+                
+                value = "" if pd.isna(record[col]) else str(record[col])
+
+                # Handle Multi-Picklist
+                col_type = next((c.type for c in sheet.columns if c.title == col), None)
+                if col_type == "MULTI_PICKLIST":
+                    if isinstance(value, str):
+                        parts = re.split(r'[;,]\s*|\s+', value.strip())
+                        parts = [p for p in parts if p]
+                        value = ", ".join(parts)
+
                 cell.value = value
                 cells.append(cell)
+
         if cells:
             row = models.Row()
             row.to_top = False
             row.cells = cells
             rows_to_add.append(row)
 
-    # 5️⃣ Add rows (batch to handle Smartsheet limits)
+    # 🔹 Upload rows in batches
     BATCH_SIZE = 400
     for i in range(0, len(rows_to_add), BATCH_SIZE):
-        batch = rows_to_add[i:i + BATCH_SIZE]
-        response = client.Sheets.add_rows(SHEET_ID, batch)
-        print(f"Added {len(response.data)} rows to '{sheet_name}'")
+        batch = rows_to_add[i:i+BATCH_SIZE]
+        client.Sheets.add_rows(SHEET_ID, batch)
+        print(f"Added {len(batch)} new rows.")
 
-    print(f"✅ Smartsheet '{sheet_name}' updated successfully.")
+    print(f"✅ Smartsheet '{sheet_name}' fully refreshed.")

@@ -100,6 +100,53 @@ human_resources_group = [aaron, linda]
 testing_group = [josh, fabian, megan, cari, ashley, ashley_alt]
 site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy, ashley, ashley_alt]
 
+CLIENT_SCHOOL_OVERRIDES = {
+    "Piper Becker": {
+        'current': "School: Commonwealth Charter Academy",
+        'previous': ["School: Agora Cyber"]
+    },
+    "Maria Cutler": {
+        'current': "School: Commonwealth Charter Academy",
+        'previous': ["School: Agora Cyber"]
+    },
+    "Cassandra Davies": {
+        'current': "School: Commonwealth Charter Academy",
+        'previous': ["School: Agora Cyber"]
+    },
+    "Emma Eckstine": {
+        'current': "School: Commonwealth Charter Academy",
+        'previous': ["School: Agora Cyber"]
+    },
+    "Sophia Eckstine": {
+        'current': "School: Commonwealth Charter Academy",
+        'previous': ["School: Agora Cyber"]
+    },
+    "Steven Graham": {
+        'current': "School: Commonwealth Charter Academy",
+        'previous': ["School: Agora Cyber"]
+    },
+    "Nazareth Villegas": {
+        'current': "School: Commonwealth Charter Academy",
+        'previous': ["School: Agora Cyber"]
+    },
+    "George McCune": {
+        'current': "School: PA Distance Learning Charter",
+        'previous': ["School: Agora Cyber"]
+    },
+    "Fardinan Nuhan": {
+        'current': "School: Agora Cyber",
+        'previous': ["School: Insight"]
+    },
+    "Angel Otero": {
+        'current': "School: Agora Cyber",
+        'previous': ["School: PA Virtual Charter"]
+    },
+    "Isaiah Jones": {
+        'current': "School: Agora Cyber",
+        'previous': ["School: Commonwealth Charter Academy"]
+    },
+}
+
 def handle_submit_form_data(table, data):
     if table == 'News_Posts':
         query = text("""
@@ -896,7 +943,7 @@ def handle_generate_school_util_report():
         end_date = data.get('end_date')
 
         try:
-            report_file = generate_school_util_report(start_date, end_date)
+            report_file = generate_school_util_report(start_date, end_date, CLIENT_SCHOOL_OVERRIDES)
             return send_file(
                 report_file,
                 as_attachment=True,
@@ -928,15 +975,32 @@ def handle_generate_invoice_report():
 
 @app.route('/report-generator/open-cases/generate-report', methods=['POST'])
 def handle_generate_open_cases_report():
-    file = request.files.get('file')
-    school = request.form.get('school')
-
-    if not file:
-        return jsonify({'error': 'No file uploaded'}), 400
-
     try:
-        # The function already returns (jsonify(message), status_code)
-        return generate_open_cases_report(file, school)
+        # Get all 4 uploaded files
+        cca_file = request.files.get('cca_file')
+        agora_file = request.files.get('agora_file')
+        insight_file = request.files.get('insight_file')
+        other_file = request.files.get('other_file')
+
+        # Validate presence of all four files
+        missing = []
+        if not cca_file: missing.append("CCA file")
+        if not agora_file: missing.append("Agora file")
+        if not insight_file: missing.append("Insight file")
+
+        if missing:
+            return jsonify({
+                'error': f"Missing required uploads: {', '.join(missing)}"
+            }), 400
+
+        # Call the backend processing function
+        return generate_open_cases_report(
+            cca_file,
+            agora_file,
+            insight_file,
+            other_file
+        )
+
     except Exception as e:
         print("Error in open cases route:", e)
         return jsonify({"error": str(e)}), 500
