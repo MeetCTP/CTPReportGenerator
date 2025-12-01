@@ -92,7 +92,40 @@ def label_service(row):
                 return label  # Everything else
     return "Uncategorized"
 
-def generate_school_util_report(start_date, end_date):
+def apply_school_overrides(df, overrides):
+    """
+    Removes rows where a student's school does NOT match the student's current school
+    according to the override dictionary.
+    """
+
+    # Normalize old to always be a list
+    normalized = {}
+    for student, info in overrides.items():
+        old_schools = info.get("old", [])
+        if not isinstance(old_schools, list):
+            old_schools = [old_schools]
+
+        normalized[student] = {
+            "current": info["current"],
+            "old": old_schools,
+        }
+
+    # If a student is not in overrides, keep the row.
+    # If they ARE in overrides, keep only the row where School == current school.
+    def should_keep(row):
+        student = row["Client"]          # <== important: uses the "Client" column from SchoolUtilization
+        school = row["School"]
+
+        if student not in normalized:
+            return True  # No override, keep
+
+        current = normalized[student]["current"]
+
+        return school == current  # Keep only correct school row
+
+    return df[df.apply(should_keep, axis=1)]
+
+def generate_school_util_report(start_date, end_date, overrides):
     try:
         db_user = os.getenv("DB_USER")
         db_pw = os.getenv("DB_PW")
@@ -126,6 +159,9 @@ def generate_school_util_report(start_date, end_date):
         data = pd.read_sql_query(query, engine)
 
         data.drop_duplicates(inplace=True)
+        data = data[data['ServiceCode'] != 'GPAT']
+
+        data = apply_school_overrides(data, overrides)
 
         ins_query = f"""
             SELECT *
@@ -134,7 +170,10 @@ def generate_school_util_report(start_date, end_date):
         """
         ins_data = pd.read_sql_query(ins_query, engine)
 
-        data.drop_duplicates(inplace=True)
+        ins_data.drop_duplicates(
+            subset=['Client', 'Provider', 'AppStart'],
+            inplace=True
+        )
 
         def get_week_label(date):
             if start_of_two_weeks_ago <= date <= end_of_two_weeks_ago:
@@ -195,16 +234,16 @@ def generate_school_util_report(start_date, end_date):
         )
 
         ins_event_hours = (
-            ins_data.groupby(['County', 'Week'])['EventHours']
+            ins_data.groupby(['PayorName', 'Week'])['EventHours']
             .sum()
             .reset_index()
-            .pivot(index='County', columns='Week', values='EventHours')
+            .pivot(index='PayorName', columns='Week', values='EventHours')
             .fillna(0)
             .round(2)
             .reset_index()
         )
 
-        ins_event_hours = ins_event_hours.rename(columns={'County': 'School'})
+        ins_event_hours = ins_event_hours.rename(columns={'PayorName': 'School'})
 
         columns_in_order_hours = ['School'] + [col for col in desired_order if col in event_hours.columns]
         event_hours = event_hours[columns_in_order_hours]
