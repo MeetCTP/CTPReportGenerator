@@ -133,7 +133,7 @@ CLIENT_SCHOOL_OVERRIDES = {
         'current': "School: PA Distance Learning Charter",
         'previous': ["School: Agora Cyber"]
     },
-    "Fardinan Nuhan": {
+    "Fardinan Nuhad": {
         'current': "School: Agora Cyber",
         'previous': ["School: Insight"]
     },
@@ -144,6 +144,14 @@ CLIENT_SCHOOL_OVERRIDES = {
     "Isaiah Jones": {
         'current': "School: Agora Cyber",
         'previous': ["School: Commonwealth Charter Academy"]
+    },
+    "Albert Knorr": {
+        'current': "School: Commonwealth Charter Academy",
+        'previous': ["School: PA Distance Learning Charter"]
+    },
+    "Phoenix Chima": {
+        'current': "School: Commonwealth Charter Academy",
+        'previous': ["School: PA Distance Learning Charter"]
     },
 }
 
