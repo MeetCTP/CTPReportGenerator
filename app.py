@@ -89,6 +89,7 @@ ashley = f"Ashley.D.James"
 ashley_alt = f"Ashley.James"
 erica = f"Erica.N.Wetzel"
 sarah = f"Sarah.E.McMickle"
+jared = f"Jared.F.Clemens"
 
 #Groups
 admin_group = [lisa, admin, dan]
@@ -98,7 +99,7 @@ accounting_group = [eileen, deborah]
 student_services_group = [erica, ashley, ashley_alt, sarah]
 human_resources_group = [aaron, linda]
 testing_group = [josh, fabian, megan, cari, ashley, ashley_alt]
-site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy, ashley, ashley_alt]
+site_mod_group = [josh, fabian, lisa, admin, eileen, aaron, amy, ashley, ashley_alt, jared]
 
 CLIENT_SCHOOL_OVERRIDES = {
     "Piper Becker": {
@@ -787,7 +788,7 @@ def handle_generate_client_cancel_report():
             return jsonify({"error": "At least one cancellation reason must be selected"}), 400
         
         try:
-            report_file = generate_client_cancel_report(provider, client, cancel_reasons, start_date, end_date)
+            report_file = generate_client_cancel_report(provider, client, cancel_reasons, start_date, end_date, CLIENT_SCHOOL_OVERRIDES)
             return send_file(
                 report_file,
                 as_attachment=True,

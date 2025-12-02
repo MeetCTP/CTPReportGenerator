@@ -11,7 +11,7 @@ import sys
 import os
 import io
 
-def generate_client_cancel_report(provider, client, cancel_reasons, start_date, end_date):
+def generate_client_cancel_report(provider, client, cancel_reasons, start_date, end_date, overrides):
     try:
         db_user = os.getenv("DB_USER")
         db_pw = os.getenv("DB_PW")
@@ -73,6 +73,9 @@ def generate_client_cancel_report(provider, client, cancel_reasons, start_date, 
                 FROM ClientCancellationView
                 WHERE (CONVERT(DATE, ServiceDate, 101) BETWEEN '{month_ranges[0][0].strftime('%Y-%m-%d')}' AND '{month_ranges[-1][1].strftime('%Y-%m-%d')}')
             """, engine).sort_values(by='ServiceDate', ascending=True)
+
+            data = apply_school_overrides(data, overrides)
+            all_data = apply_school_overrides(all_data, overrides)
 
             # Compute once for all data (only once outside loop)
             if 'cancel_percentage' not in locals():
@@ -176,3 +179,36 @@ def calculate_cancellation_percentage(data, cancel_reasons):
         cancellation_percentages[client] = (cancellations / total_sessions) * 100
 
     return cancellation_percentages
+
+def apply_school_overrides(df, overrides):
+    """
+    Removes rows where a student's school does NOT match the student's current school
+    according to the override dictionary.
+    """
+
+    # Normalize old to always be a list
+    normalized = {}
+    for student, info in overrides.items():
+        old_schools = info.get("old", [])
+        if not isinstance(old_schools, list):
+            old_schools = [old_schools]
+
+        normalized[student] = {
+            "current": info["current"],
+            "old": old_schools,
+        }
+
+    # If a student is not in overrides, keep the row.
+    # If they ARE in overrides, keep only the row where School == current school.
+    def should_keep(row):
+        student = row["Client"]          # <== important: uses the "Client" column from SchoolUtilization
+        school = row["School"]
+
+        if student not in normalized:
+            return True  # No override, keep
+
+        current = normalized[student]["current"]
+
+        return school == current  # Keep only correct school row
+
+    return df[df.apply(should_keep, axis=1)]
