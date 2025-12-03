@@ -17,14 +17,14 @@ import os
 service_keywords = {
     'BCBA': [r'.*Board Certified Behavior Analyst.*', r'.*BCBA.*'],
     'BSC': [r'.*Behavior Specialist Consultant.*', r'.*BSC.*'],
-    'CSET': [r'.*Speech/Language.*', r'.*Speech.*', r'.*SLP.*', r'.*Language.*'],
+    'CSET': [r'.*Special Education.*', r'.*SPED.*', r'.*Certified Special Education.*'],
     'WRI': [r'.*Wilson.*', r'.*Wilson Reading.*'],
     'LSW': [r'.*Licensed Social Worker.*', r'.*Social Worker.*', r'.*Social Work.*'],
     'Counselor': [r'.*Counselor.*', r'.*Counseling.*', r'.*Counsel.*'],
     'IA/PCA': [r'.*Personal Care Assistant.*', r'.*Instructional Aide.*', r'.*Instructional Assistant.*', r'.*PCA.*', r'.*IA.*'],
     'BHT': [r'.*Behavioral Health Technician.*', r'.*Behavior Health Technician.*', r'.*BHT.*'],
     'CT Tutor': [r'.*Certified Teacher.*', r'.*Tutor.*', r'.*Tutoring.*'],
-    'SLP': [r'.*Speech.*', r'.*Speech Therapist.*', r'.*Speech Therapy.*', r'.*SLP.*'],
+    'SLP': [r'.*Speech.*', r'.*Speech/Language.*', r'.*Speech Therapist.*', r'.*Speech Therapy.*', r'.*Language.*', r'.*SLP.*'],
     'Classroom IA': [r'.*Classroom Assistant.*', r'.*Classroom IA.*'],
     'RBT': [r'.*RBT.*', r'.*Registered Behavior Technician.*'],
     'Social Skills': [r'.*Social Skills.*'],
@@ -38,6 +38,8 @@ def generate_open_cases_report(cca_file, agora_file, insight_file, other_file):
         if cca_file:
             df = load_referral_file(cca_file)
             df = cca_referrals(df, "cca")
+            if 'School' not in df.columns:
+                df['School'] = 'CCA'
             dfs.append(df)
 
         if agora_file:
@@ -53,7 +55,8 @@ def generate_open_cases_report(cca_file, agora_file, insight_file, other_file):
         if other_file:
             df = load_referral_file(other_file)
             df = cca_referrals(df, "cca")
-            df['School'] = "Other"
+            if 'School' not in df.columns:
+                df['School'] = 'Other'
             dfs.append(df)
 
         # --- Merge all input files into one dataframe ---
@@ -68,6 +71,8 @@ def generate_open_cases_report(cca_file, agora_file, insight_file, other_file):
 
         full_df = normalize_group_individual(full_df, "")
         full_df = apply_service_normalization(full_df)
+
+        full_df = full_df[full_df['Service'] != 'Uncategorized'].copy()
 
         # Push to Smartsheet
         push_to_smartsheet(full_df, "Open Case Referral Applications")
@@ -109,6 +114,8 @@ def agora_referrals(df, school):
     if 'County' in df.columns:
         df['County'] = df['County'].apply(lambda x: clean_county(x, remove_word=True))
 
+    df['School'] = 'Agora'
+
     return df
 
 def insight_referrals(df, school):
@@ -120,6 +127,16 @@ def insight_referrals(df, school):
         'ISA Service Name': 'Service',
         'ISA Delivery Method': 'Location'
     }, inplace=True)
+
+    if 'Service' in df.columns:
+        # parse_insight_service returns (group_ind, location)
+        parsed = df['Service'].apply(lambda s: parse_insight_service(s) if isinstance(s, str) else (None, None))
+
+        # Turn into two columns
+        df['Group/Individual'] = parsed.apply(lambda t: t[0] or "")
+        df['Location'] = parsed.apply(lambda t: t[1] or "")
+
+    df['School'] = 'Insight'
 
     return df
 
@@ -186,6 +203,36 @@ def normalize_group_individual(df, school):
         return df
 
     return df
+
+def parse_insight_service(service_raw):
+    """
+    Extract service, group/individual, and location from Insight's combined Service field.
+    Example: 'BCBA - Indiv(online)' → Individual, Virtual
+             'BSC - Group(In-Person)' → Group, F2F
+    """
+
+    if not isinstance(service_raw, str):
+        return None, None, None
+
+    text = service_raw.strip().lower()
+
+    # ---------- GROUP / INDIVIDUAL ----------
+    if "indiv" in text:
+        group_ind = "Individual"
+    elif "group" in text:
+        group_ind = "Group"
+    else:
+        group_ind = ""
+
+    # ---------- LOCATION ----------
+    if "online" in text or "virtual" in text or "remote" in text:
+        location = "Virtual"
+    elif "person" in text or "in-person" in text or "in person" in text:
+        location = "F2F"
+    else:
+        location = ""
+
+    return group_ind, location
 
 def normalize_school_column(df, school):
     """
