@@ -73,6 +73,7 @@ def generate_open_cases_report(cca_file, agora_file, insight_file, other_file):
         full_df = apply_service_normalization(full_df)
 
         full_df = full_df[full_df['Service'] != 'Uncategorized'].copy()
+        full_df = full_df[full_df['Location'] != 'Virtual'].copy()
 
         # Push to Smartsheet
         push_to_smartsheet(full_df, "Open Case Referral Applications")
@@ -90,9 +91,20 @@ def load_referral_file(upload):
     return pd.read_excel(upload)
     
 def cca_referrals(df, school):
+    if 'Related Service' in df.columns:
+        df['Group/Individual'] = df['Related Service'].apply(
+            lambda x: (
+                'Group' if isinstance(x, str) and 'group' in x.lower()
+                else 'Individual'
+            )
+        )
+    else:
+        # If service column doesn't exist (shouldn't happen), default all rows
+        df['Group/Individual'] = 'Individual'
+
     df.rename(columns={
         'Key': 'School Referral ID',
-        'Location of Service': 'Location',
+        'Location of Services': 'Location',
         'Related Service': 'Service',
         'County of residence (enter NA for virtual services)': 'County',
         'ZIP Code of Residence': 'Zip Code',
@@ -113,6 +125,9 @@ def agora_referrals(df, school):
 
     if 'County' in df.columns:
         df['County'] = df['County'].apply(lambda x: clean_county(x, remove_word=True))
+
+    if 'Status' in df.columns:
+        df = df[df['Status'] != "FUTURE POSITIONS"].copy()
 
     df['School'] = 'Agora'
 
@@ -148,7 +163,7 @@ def normalize_location(value):
 
     # Multi-location match
     if "and" in val and "virtual" in val and ("face" in val or "f2f" in val or "in-person" in val):
-        return "F2F, Virtual"  # <- FIXED
+        return "F2F"  # <- FIXED
     
     # Single-location matches
     if any(x in val for x in ["virtual", "online", "remote"]):
@@ -183,7 +198,7 @@ def normalize_group_individual(df, school):
 
     # --- CCA ---
     # Does not have an indicator; skip adding Group/Individual column
-    if school.lower() == "cca":
+    if school == "cca":
         return df
 
     # --- AGORA ---
