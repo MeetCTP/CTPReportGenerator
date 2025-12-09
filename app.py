@@ -29,6 +29,7 @@ from generators.valid_emails import generate_valid_email_report
 from generators.school_utilization import generate_school_util_report
 from generators.invoice_billing_report import generate_invoice_billing_report
 from generators.open_cases_format import generate_open_cases_report
+from generators.monthly_util_numbers import generate_monthly_nums
 from generators.no_contact_list import merge_and_push_NC
 from generators.code_look_up import code_search
 from flask_cors import CORS
@@ -514,6 +515,10 @@ def invoice_report():
 @app.route('/report-generator/open-cases')
 def open_cases():
     return render_template('open-cases.html')
+
+@app.route('/report-generator/monthly-numbers')
+def monthly_numbers():
+    return render_template('monthly-numbers.html')
 
 @app.route('/report-generator/school-matching/generate-report', methods=['POST'])
 def handle_generate_school_matching_report():
@@ -1013,3 +1018,25 @@ def handle_generate_open_cases_report():
     except Exception as e:
         print("Error in open cases route:", e)
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/report-generator/monthly-numbers/generate-report', methods=['POST'])
+def handle_generate_monthly_numbers_report():
+    if request.headers['Content-Type'] == 'application/json':
+        data = request.get_json()
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        company_role = data.get('company_role')
+
+        file_name = f"Monthly_Numbers_'{company_role}'_'{start_date}'-'{end_date}'.xlsx"
+
+        try:
+            report_file = generate_monthly_nums(start_date, end_date, company_role)
+            return send_file(
+                report_file,
+                as_attachment=True,
+                download_name=file_name
+            )
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Utilization Monthly Numbers</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script src="{{ url_for('static', filename='js/monthly-numbers.js') }}"></script>
+</head>
+<body>
+    <div class="container-blk">
+        <h1>Clinical Utilization Monthly Numbers</h1>
+        <nav class="report-nav">
+            <a href="http://ctphome/report-generator">Back to Reports</a>
+            <a href="http://ctphome">Home</a>
+        </nav>
+        <div>
+            <form id="report-form">
+                <div>
+                    <label for="start-date">Start Date:</label>
+                    <input type="date" id="start-date" name="start_date" required>
+                </div>
+                <div>
+                    <label for="end-date">End Date:</label>
+                    <input type="date" id="end-date" name="end_date" required>
+                </div>
+                <div class="active-row">
+                    <input class="checkboxes" type="radio" id="employee" name="company_role" value="Employee">
+                    <label for="employee">Employee</label>
+                    <input class="checkboxes" type="radio" id="contractor" name="company_role" value="Contractor">
+                    <label for="contractor">Contractor</label>
+                </div>
+            
+                <button id="generate" type="button">Generate Report</button>
+            </form>
+        </div>
+    </div>
+    <section class="desc-container">
+        <h2 class="in-bl">Report Description</h2>
+        <p class="report-desc">
+            The Clinical Utilization Monthly Numbers Report gives comprehensive metrics for provider services such as percentage of completed
+            services and indirect time.
+            <br>
+            <span class="warning">Some Central Reach labels may be inaccurate due to duplicates in their system.</span>
+        </p>
+    </section>
+</body>
+</html>

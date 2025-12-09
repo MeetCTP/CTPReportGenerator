@@ -61,6 +61,9 @@ def generate_monthly_nums(start_date, end_date, company_role):
         connection_string = f"mssql+pymssql://{db_user}:{db_pw}@CTP-DB/CRDB2"
         engine = create_engine(connection_string)
 
+        start_dt = pd.to_datetime(start_date)
+        end_dt = pd.to_datetime(end_date)
+
         employee_providers = [
             'Cathleen DiMaria',
             'Christine Veneziale',
@@ -91,11 +94,11 @@ def generate_monthly_nums(start_date, end_date, company_role):
             query += f"""WHERE Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
             ins_query += f"""WHERE Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
 
-        query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
+        query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND '{end_date}')"""
 
         data = pd.read_sql_query(query, engine)
 
-        ins_query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
+        ins_query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND '{end_date}')"""
 
         ins_data = pd.read_sql_query(ins_query, engine)
 
@@ -190,8 +193,103 @@ def generate_monthly_nums(start_date, end_date, company_role):
         
         data = data[data["ServiceCode"] != "GPAT"]
 
+        # week numbers relative to the month
+        unique_weeks = data.assign(Week=data['AppStart'].dt.isocalendar().week).Week.nunique()
+
+        weeks_in_month = unique_weeks if unique_weeks > 0 else 4
+
+        g = data.groupby("Provider")
+
+        monthly_nums = pd.DataFrame({
+            "Provider": g.size().index,
+
+            # Total hours
+            "TotalHours": g.apply(lambda x: x.loc[x["Status"] != "Cancelled", "EventHours"].sum()),
+
+            # Average hours per week
+            "AverageHoursPerWeek": g.apply(
+                lambda x: x.loc[x["Status"] != "Cancelled", "EventHours"].sum() / weeks_in_month
+            ),
+
+            # Direct hours
+            "CompletedDirect": g.apply(
+                lambda x: x.loc[
+                    (x["Category"] == "Direct") & (x["Status"] != "Cancelled"), 
+                    "EventHours"
+                ].sum()
+            ),
+
+            # Direct percentage
+            "%ofDirect": g.apply(
+                lambda x: (
+                    (
+                        x.loc[
+                            (x["Category"] == "Direct") & (x["Status"] != "Cancelled"),
+                            "EventHours"
+                        ].sum()
+                    )
+                    /
+                    (
+                        x.loc[x["Category"] == "Direct", "AuthHours"].sum()
+                        * weeks_in_month
+                    )
+                    * 100
+                ) if x.loc[x["Category"] == "Direct", "AuthHours"].sum() > 0 else 0
+            ),
+
+            # Indirect hours
+            "IndirectUsed": g.apply(
+                lambda x: x.loc[
+                    (x["Category"] == "Indirect") & (x["Status"] != "Cancelled"), 
+                    "EventHours"
+                ].sum()
+            ),
+
+            # Indirect percentage
+            "%ofIndirect": g.apply(
+                lambda x: (
+                    x.loc[
+                        (x["Category"] == "Indirect") & (x["Status"] != "Cancelled"),
+                        "EventHours"
+                    ].sum()
+                    /
+                    x.loc[x["Category"] == "Indirect", "AuthHours"].sum()
+                    * 100
+                ) if x.loc[x["Category"] == "Indirect", "AuthHours"].sum() > 0 else 0
+            ),
+
+            # Evaluations based on description keywords
+            "Evals": g.apply(
+                lambda x: x.loc[
+                    (x["Status"] != "Cancelled")
+                    & (x["ServiceCodeDescription"].str.contains(
+                        "Assessment|Evaluation|Test|Functional|Mapp|Promoting", case=False, na=False
+                    )),
+                    "EventHours"
+                ].sum()
+            ),
+
+            # Provider cancels
+            "ProviderCancel": g.apply(
+                lambda x: x.loc[x["SchedulingCancelledReason"] == "Provider Cancel", "EventHours"].sum()
+            ),
+
+            # MakeUpTime
+            "MakeUp": g.apply(
+                lambda x: x.loc[
+                    (x["Subcategory"] == "MakeUpTime")
+                    & (x["Status"] != "Cancelled"),
+                    "EventHours"
+                ].sum()
+            ),
+        })
+
+        # ------------------------ WRITE BOTH SHEETS ------------------------
         output_file = io.BytesIO()
-        data.to_excel(output_file, index=False)
+        with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
+            data.to_excel(writer, sheet_name="Raw Data", index=False)
+            monthly_nums.to_excel(writer, sheet_name="Monthly Numbers", index=False)
+
         output_file.seek(0)
         return output_file
 
