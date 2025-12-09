@@ -72,7 +72,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
             et_data['StudentCode'] = et_data['StudentCode'].astype('object')
             et_data['StartTime'] = pd.to_datetime(et_data['StartTime'], format='%H:%M:%S').dt.strftime('%I:%M%p').astype('object')
             et_data['EndTime'] = pd.to_datetime(et_data['EndTime'], format='%H:%M:%S').dt.strftime('%I:%M%p').astype('object')
-            et_data['DateTimeSigned'] = pd.to_datetime(et_data['DateTimeSigned'], format='%m/%d/%Y %I:%M:%S %p')
+            et_data['DateTimeSigned'] = pd.to_datetime(et_data['DateTimeSigned'], errors='coerce')
             
             #et_data = pd.merge(et_data, appointment_match_data[['Provider', 'EmploymentType']], 
             #            on='Provider', how='left')
