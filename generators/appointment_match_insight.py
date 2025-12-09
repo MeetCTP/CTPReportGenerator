@@ -253,6 +253,17 @@ def find_time_discrepancies(cr_data, rsm_data):
     missing_from  = find_missing_from(aligned_cr_data, aligned_rsm_data, time_diffs)
     status_diffs = find_status_diffs(aligned_cr_data, aligned_rsm_data, missing_from)
 
+    missing_from.rename(columns={'Start Time_CR': 'Start Time'}, inplace=True)
+
+    missing_from = (
+        missing_from
+            .merge(status_diffs, on=["Provider", "Student Name", "Start Time"], how="left", indicator=True)
+            .query('_merge == "left_only"')
+            .drop(columns=['_merge'])
+    )
+
+    missing_from.rename(columns={'Start Time': 'Start Time_CR'}, inplace=True)
+
     time_diffs = time_diffs.style.applymap(highlight_diff_type_cells, subset=['DiscrepancyType'])
 
     return time_diffs, missing_from, status_diffs, bsc_bcba_diffs
