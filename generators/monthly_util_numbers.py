@@ -248,14 +248,34 @@ def generate_monthly_nums(start_date, end_date, company_role):
             # Indirect percentage
             "%ofIndirect": g.apply(
                 lambda x: (
-                    x.loc[
-                        (x["Category"] == "Indirect") & (x["Status"] != "Cancelled"),
-                        "EventHours"
-                    ].sum()
-                    /
-                    x.loc[x["Category"] == "Indirect", "AuthHours"].sum()
-                    * 100
-                ) if x.loc[x["Category"] == "Indirect", "AuthHours"].sum() > 0 else 0
+                    # Branch 1: PA Distance uses WEEKLY indirect auth hours
+                    (
+                        x.loc[
+                            (x["Category"] == "Indirect") & (x["Status"] != "Cancelled"),
+                            "EventHours"
+                        ].sum()
+                        /
+                        (
+                            x.loc[x["Category"] == "Indirect", "AuthHours"].sum()
+                            * weeks_in_month
+                        )
+                        * 100
+                    )
+                    if x["School"].iloc[0] == "School:_PA_Distance_Learning_Charter"
+                    else
+                    # Branch 2: Normal schools use MONTHLY indirect auth hours
+                    (
+                        x.loc[
+                            (x["Category"] == "Indirect") & (x["Status"] != "Cancelled"),
+                            "EventHours"
+                        ].sum()
+                        /
+                        x.loc[x["Category"] == "Indirect", "AuthHours"].sum()
+                        * 100
+                    )
+                )
+                if x.loc[x["Category"] == "Indirect", "AuthHours"].sum() > 0
+                else 0
             ),
 
             # Evaluations based on description keywords
