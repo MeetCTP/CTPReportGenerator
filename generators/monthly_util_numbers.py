@@ -223,18 +223,34 @@ def generate_monthly_nums(start_date, end_date, company_role):
             "%ofDirect": g.apply(
                 lambda x: (
                     (
+                        # Total completed direct hours (excluding cancelled)
                         x.loc[
                             (x["Category"] == "Direct") & (x["Status"] != "Cancelled"),
                             "EventHours"
                         ].sum()
+                        /
+                        (
+                            # Weekly auth hours × weeks_in_month
+                            x.loc[
+                                (x["Category"] == "Direct") & (x["AuthType"] == "weekly"),
+                                "AuthHours"
+                            ].sum()
+                            * weeks_in_month
+                            +
+                            # Monthly auth hours (no multiplication)
+                            x.loc[
+                                (x["Category"] == "Direct") & (x["AuthType"] == "monthly"),
+                                "AuthHours"
+                            ].sum()
+                        )
+                        * 100
                     )
-                    /
-                    (
-                        x.loc[x["Category"] == "Direct", "AuthHours"].sum()
-                        * weeks_in_month
-                    )
-                    * 100
-                ) if x.loc[x["Category"] == "Direct", "AuthHours"].sum() > 0 else 0
+                )
+                if (
+                    # Only calculate if they have ANY weekly or monthly direct auth hours
+                    x.loc[(x["Category"] == "Direct"), "AuthHours"].sum() > 0
+                )
+                else 0
             ),
 
             # Indirect hours
