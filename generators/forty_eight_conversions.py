@@ -13,7 +13,7 @@ import io
 from flask_mail import Message
 from flask import url_for
 
-def generate_unconverted_time_report(company_roles, start_date_str, end_date_str):
+def generate_unconverted_time_report(company_roles, start_date_str, end_date_str, overrides):
     try:
         user_name = os.getlogin()
         documents_path = f"C:/Users/{user_name}/Documents/"
@@ -32,6 +32,9 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
         if company_roles:
             query += f""" AND (CompanyRole IN ({', '.join([f"'{s}'" for s in company_roles])}))"""
         data = pd.read_sql_query(query, engine)
+
+        data.drop_duplicates(inplace=True)
+        data = apply_school_overrides(data, overrides)
 
         data['ServiceDate'] = pd.to_datetime(data['ServiceDate'], errors='coerce')
         data['ConvertedDT'] = pd.to_datetime(data['ConvertedDT'], errors='coerce')
@@ -126,6 +129,39 @@ def generate_unconverted_time_report(company_roles, start_date_str, end_date_str
 
     finally:
         engine.dispose()
+
+def apply_school_overrides(df, overrides):
+    """
+    Removes rows where a student's school does NOT match the student's current school
+    according to the override dictionary.
+    """
+
+    # Normalize old to always be a list
+    normalized = {}
+    for student, info in overrides.items():
+        old_schools = info.get("old", [])
+        if not isinstance(old_schools, list):
+            old_schools = [old_schools]
+
+        normalized[student] = {
+            "current": info["current"],
+            "old": old_schools,
+        }
+
+    # If a student is not in overrides, keep the row.
+    # If they ARE in overrides, keep only the row where School == current school.
+    def should_keep(row):
+        student = row["Client"]          # <== important: uses the "Client" column from SchoolUtilization
+        school = row["School"]
+
+        if student not in normalized:
+            return True  # No override, keep
+
+        current = normalized[student]["current"]
+
+        return school == current  # Keep only correct school row
+
+    return df[df.apply(should_keep, axis=1)]
     
 
 #Email function

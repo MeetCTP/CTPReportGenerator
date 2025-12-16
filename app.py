@@ -723,7 +723,7 @@ def handle_generate_forty_eight_hour_report():
         end_date = data.get('end_date')
         
         try:
-            _, _, _, excel_file = generate_unconverted_time_report(selected_roles, start_date, end_date)
+            _, _, _, excel_file = generate_unconverted_time_report(selected_roles, start_date, end_date, CLIENT_SCHOOL_OVERRIDES)
             return send_file(
                 excel_file,
                 as_attachment=True,
