@@ -73,7 +73,20 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
             et_data['StartTime'] = pd.to_datetime(et_data['StartTime'], format='%H:%M:%S').dt.strftime('%I:%M%p').astype('object')
             et_data['EndTime'] = pd.to_datetime(et_data['EndTime'], format='%H:%M:%S').dt.strftime('%I:%M%p').astype('object')
             et_data['DateTimeSigned'] = pd.to_datetime(et_data['DateTimeSigned'], errors='coerce')
-            
+
+            et_data = (
+                et_data
+                    .sort_values(
+                        by=['Provider', 'Student', 'ServiceDate', 'StartTime', 'EndTime', 'DateTimeSigned'],
+                        ascending=[True, True, True, True, True, False]  # newest first
+                    )
+                    .drop_duplicates(
+                        subset=['Provider', 'Student', 'ServiceDate', 'StartTime', 'EndTime'],
+                        keep='first'
+                    )
+                    .reset_index(drop=True)
+            )
+
             #et_data = pd.merge(et_data, appointment_match_data[['Provider', 'EmploymentType']], 
             #            on='Provider', how='left')
             
@@ -92,7 +105,7 @@ def generate_appointment_agora_report(range_start, range_end, et_file, employmen
                         df[col] = df[col].str.replace('-', ' ', regex=False)
                         df[col] = df[col].astype('object')
                         
-            et_data = et_data.loc[et_data.groupby(['Provider', 'Student', 'ServiceDate', 'StartTime', 'EndTime'])['DateTimeSigned'].idxmax()]
+            #et_data = et_data.loc[et_data.groupby(['Provider', 'Student', 'ServiceDate', 'StartTime'])['DateTimeSigned'].idxmax()]
 
             mile_diffs, et_virtual, cr_mileage, et_mileage = find_mileage_discrepancies(et_data, appointment_match_data)
             time_diffs, missing_from, status_diffs = find_time_discrepancies(et_data, appointment_match_data, et_virtual)
