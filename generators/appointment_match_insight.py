@@ -29,7 +29,7 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
             'Jessica Trudeau',
             'Kaitlin Konopka',
             'Kristie Girten',
-            'Nicole Morrison', 
+            'Nicole Morrison',
             'Roseanna Vellner',
             'Terri Ahern'
         ]
@@ -141,7 +141,7 @@ def generate_appointment_insight_report(range_start, range_end, rsm_file, employ
             time_diffs, missing_from, status_diffs, bsc_bcba_diffs = find_time_discrepancies(appointment_match_data, rsm_data)
 
             appointment_match_data.drop_duplicates(inplace=True)
-            rsm_data.drop_duplicates(inplace=True)
+            #rsm_data.drop_duplicates(inplace=True)
             
             output_file = io.BytesIO()
             with ExcelWriter(output_file, engine='openpyxl') as writer:

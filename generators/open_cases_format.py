@@ -45,6 +45,7 @@ def generate_open_cases_report(cca_file, agora_file, insight_file, other_file):
         if agora_file:
             df = load_referral_file(agora_file)
             df = agora_referrals(df, "agora")
+            df['Hours'] = pd.to_numeric(df['Hours'], errors='coerce') / 60
             dfs.append(df)
 
         if insight_file:
@@ -120,7 +121,8 @@ def cca_referrals(df, school):
 def agora_referrals(df, school):
     df.rename(columns={
         'Posting ID': 'School Referral ID',
-        'Comments': 'Notes'
+        'Comments': 'Notes',
+        'Minutes': 'Hours',
     }, inplace=True)
 
     if 'County' in df.columns:
