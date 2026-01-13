@@ -810,9 +810,11 @@ def handle_generate_clinical_util_report():
         data = request.get_json()
         start_date = data.get('start_date')
         end_date = data.get('end_date')
-        company_role = data.get('company_role')
+        company_role = data.get('company_role', [])
 
-        file_name = f"Clinical_Util_Tracker_'{company_role}'_'{start_date}'-'{end_date}'.xlsx"
+        role_label = "_".join(company_role) if company_role else "All"
+
+        file_name = f"Clinical_Util_Tracker_'{role_label}'_'{start_date}'-'{end_date}'.xlsx"
 
         try:
             report_file = generate_util_tracker(start_date, end_date, company_role)

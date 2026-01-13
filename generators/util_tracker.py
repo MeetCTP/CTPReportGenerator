@@ -83,19 +83,26 @@ def generate_util_tracker(start_date, end_date, company_role):
             FROM InsuranceClinicalUtil
         """
 
-        if company_role == 'Employee':
-            query += f"""WHERE Provider IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
-            ins_query += f"""WHERE Provider IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
-        elif company_role == 'Contractor':
-            query += f"""WHERE Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
-            ins_query += f"""WHERE Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
+        query += f"""WHERE (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
+        ins_query += f"""WHERE (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
 
-        query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
+        employee_selected = 'Employee' in company_role
+        contractor_selected = 'Contractor' in company_role
+
+        if employee_selected and not contractor_selected:
+            # Employee ONLY
+            query += f""" AND Provider IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
+            ins_query += f""" AND Provider IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
+
+        elif contractor_selected and not employee_selected:
+            # Contractor ONLY
+            query += f""" AND Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
+            ins_query += f""" AND Provider NOT IN ({', '.join([f"'{s}'" for s in employee_providers])})"""
+
+        else:
+            pass
 
         data = pd.read_sql_query(query, engine)
-
-        ins_query += f""" AND (CONVERT(DATE, AppStart, 101) BETWEEN '{start_date}' AND DATEADD(day, 1, '{end_date}'))"""
-
         ins_data = pd.read_sql_query(ins_query, engine)
 
         indirect_categories = {

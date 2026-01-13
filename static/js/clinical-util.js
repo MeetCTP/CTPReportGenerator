@@ -22,22 +22,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
-        const companyRole = document.querySelector('input[name="company_role"]:checked');
+        const companyRoles = Array.from(
+            document.querySelectorAll('input[name="company_role"]:checked')
+        ).map(cb => cb.value);
 
         if (!startDate || !endDate) {
             alert('Please fill in required fields');
             return;
         }
 
-        if (!companyRole) {
-            alert('Please choose either Employee or Contractor');
-            return;
-        }
-
         const formData = {
             start_date: startDate,
             end_date: endDate,
-            company_role: companyRole.value,
+            company_role: companyRoles,
         };
         console.log('JSON Data:', formData);
 
@@ -53,7 +50,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     var url = window.URL.createObjectURL(blob);
                     var a = document.createElement('a');
                     a.href = url;
-                    a.download = `Clinical_Util_Tracker_${formData.company_role}_${startDate}_${endDate}.xlsx`;
+                    const roleLabel = companyRoles.length ? companyRoles.join('_') : 'All';
+                    a.download = `Clinical_Util_Tracker_${roleLabel}_${startDate}_${endDate}.xlsx`;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
