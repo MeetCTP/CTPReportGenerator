@@ -45,6 +45,17 @@ document.addEventListener('DOMContentLoaded', function () {
         xhr.onreadystatechange = function () {
             if (xhr.readyState === XMLHttpRequest.DONE) {
                 if (xhr.status === 200) {
+                    if (xhr.getResponseHeader('Content-Type').includes('application/json')) {
+                        var reader = new FileReader();
+                        reader.onload = function () {
+                            var data = JSON.parse(reader.result);
+                            messageDiv.textContent = data.message;
+                            messageDiv.style.display = 'block';
+                        };
+
+                        reader.readAsText(xhr.response);
+                        return
+                    }
                     var blob = new Blob([xhr.response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                     var url = window.URL.createObjectURL(blob);
                     var a = document.createElement('a');
