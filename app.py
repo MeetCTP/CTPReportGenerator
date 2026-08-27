@@ -24,13 +24,10 @@ from generators.monthly_active_users_report import generate_monthly_active_users
 from generators.appt_overlap_pandas import generate_appt_overlap_report
 from generators.original_agora_report import generate_original_agora_report
 from generators.original_insight_report import generate_original_insight_report
-from generators.monthly_at_report import get_all_at_tables
-from generators.valid_emails import generate_valid_email_report
 from generators.school_utilization import generate_school_util_report
 from generators.invoice_billing_report import generate_invoice_billing_report
 from generators.open_cases_format import generate_open_cases_report
 from generators.monthly_util_numbers import generate_monthly_nums
-from generators.no_contact_list import merge_and_push_NC
 from generators.code_look_up import code_search
 from flask_cors import CORS
 from datetime import datetime
@@ -894,41 +891,7 @@ def render_airtable_page():
 def valid_emails_page():
     return render_template('valid-emails.html')
 
-@app.route('/report-generator/monthly-goals-report/generate-report', methods=["POST"])
-def airtable_test_page():
-    if request.headers['Content-Type'] == 'application/json':
-        data = request.get_json()
-        start_date = data['start_date']
-        end_date = data['end_date']
-
-        try:
-            report_file = get_all_at_tables(start_date, end_date)
-            return send_file(
-                report_file,
-                as_attachment=True,
-                download_name=f"All_Airtables.xlsx"
-            )
-        except Exception as e:
-                return jsonify({'error': str(e)}), 500
-    else:
-        return jsonify({'error': 'Unsupported Media Type'}), 415
     
-@app.route('/report-generator/valid-emails/generate-report', methods=["POST"])
-def handle_generate_valid_email_report():
-    if request.headers['Content-Type'] == 'application/json':
-        data = request.get_json()
-        selected_tables = data.get('tables', [])
-
-    try:
-        report_file = generate_valid_email_report(selected_tables)
-        #report_file = merge_and_push_NC()
-        return send_file(
-            report_file,
-            as_attachment=True,
-            download_name=f"Valid_Email_Addresses.xlsx"
-        )
-    except Exception as e:
-            return jsonify({'error': str(e)}), 500
 
 @app.route('/report-generator/appt-overlap/generate-report', methods=['POST'])
 def handle_generate_appt_overlap_report():
