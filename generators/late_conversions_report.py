@@ -38,6 +38,9 @@ def generate_late_conversions_report(app_start, app_end, converted_after):
         """
         data = pd.read_sql_query(query, engine)
 
+        if data.empty:
+            return None
+
         data.drop_duplicates(inplace=True)
 
         data = data.sort_values(by='ConvertedDT', ascending=True)

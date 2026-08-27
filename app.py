@@ -629,6 +629,9 @@ def handle_generate_late_conversions_report():
             # Call your Python function to generate the report
             excel_file = generate_late_conversions_report(app_start, app_end, converted_after)
 
+            if not excel_file:
+                return jsonify({'Message: No data in this date range.'})
+            
             # Return the Excel file as a download to the browser
             return send_file(
                 excel_file,
